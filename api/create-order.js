@@ -62,7 +62,7 @@ export default async function handler(request) {
       orderData = JSON.parse(orderText);
     } catch (e) {
       console.error('Razorpay non-JSON response:', orderText);
-      return new Response(JSON.stringify({ error: 'Razorpay returned non-JSON', details: orderText }), {
+      return new Response(JSON.stringify({ error: 'Razorpay returned non-JSON', status: razorpayResponse.status, details: orderText }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });

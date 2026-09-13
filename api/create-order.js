@@ -100,7 +100,7 @@ export default async function handler(request) {
 
   } catch (error) {
     console.error('Server error processing order:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message, stack: error.stack }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

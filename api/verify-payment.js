@@ -80,7 +80,10 @@ export default async function handler(request) {
     // 4. Server-Side Razorpay Order Fetch
     const auth = btoa(`${keyId}:${secret}`);
     const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
-      headers: { 'Authorization': `Basic ${auth}` }
+      headers: { 
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      }
     });
 
     if (!razorpayResponse.ok) {

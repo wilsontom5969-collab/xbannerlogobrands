@@ -1,17 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { webcrypto } from 'crypto';
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(request) {
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
     const env = process.env;
-    const body = await request.json();
+    const body = req.body;
     
     const {
       razorpay_payment_id,
@@ -25,14 +22,12 @@ export default async function handler(request) {
       logoMime
     } = body;
 
-    // 1. Strict Request Validation
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !slotId) {
-      return new Response(JSON.stringify({ error: 'Missing payment details' }), { status: 400 });
+      return res.status(400).json({ error: 'Missing payment details' });
     }
 
-    // Protect against massive payloads (limit Base64 to roughly 2MB -> ~2.8MB in base64 string length)
     if (logoBase64 && logoBase64.length > 2.8 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: 'Logo size exceeds 2MB limit' }), { status: 413 });
+      return res.status(413).json({ error: 'Logo size exceeds 2MB limit' });
     }
 
     const secret = env.RAZORPAY_KEY_SECRET;
@@ -41,27 +36,23 @@ export default async function handler(request) {
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!secret || !keyId || !supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing required environment variables');
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500 });
+      return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    // 2. Verify HMAC Signature
     const text = `${razorpay_order_id}|${razorpay_payment_id}`;
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secret);
-    const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(text));
+    const cryptoKey = await webcrypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signatureBuffer = await webcrypto.subtle.sign('HMAC', cryptoKey, encoder.encode(text));
     const signatureArray = Array.from(new Uint8Array(signatureBuffer));
     const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     if (expectedSignature !== razorpay_signature) {
-      console.error('Signature mismatch');
-      return new Response(JSON.stringify({ error: 'Invalid payment signature. Payment rejected.' }), { status: 400 });
+      return res.status(400).json({ error: 'Invalid payment signature. Payment rejected.' });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Replay Protection (Idempotency)
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('*')
@@ -69,43 +60,38 @@ export default async function handler(request) {
       .single();
 
     if (orderFetchError || !dbOrder) {
-      console.error('Order not found in DB:', orderFetchError);
-      return new Response(JSON.stringify({ error: 'Order not found in system' }), { status: 404 });
+      return res.status(404).json({ error: 'Order not found in system' });
     }
 
     if (dbOrder.status === 'verified') {
-      return new Response(JSON.stringify({ error: 'This payment has already been processed.' }), { status: 400 });
+      return res.status(400).json({ error: 'This payment has already been processed.' });
     }
 
-    // 4. Server-Side Razorpay Order Fetch
     const auth = btoa(`${keyId}:${secret}`);
     const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
       headers: { 
         'Authorization': `Basic ${auth}`,
         'Accept': 'application/json',
-        'User-Agent': 'Banner-App/1.0'
+        'User-Agent': 'Node-Fetch/1.0'
       }
     });
 
     if (!razorpayResponse.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to verify order with Razorpay' }), { status: 500 });
+      return res.status(500).json({ error: 'Failed to verify order with Razorpay' });
     }
 
     const rzpOrder = await razorpayResponse.json();
 
-    // 5. Order ↔ Slot Binding Verification
     if (!rzpOrder.receipt.startsWith(`slot_${slotId}_`)) {
-      console.error(`Slot mismatch: Order receipt ${rzpOrder.receipt} does not match requested slot ${slotId}`);
-      return new Response(JSON.stringify({ error: 'Payment slot mismatch detected' }), { status: 400 });
+      return res.status(400).json({ error: 'Payment slot mismatch detected' });
     }
 
     if (rzpOrder.status !== 'paid') {
-      return new Response(JSON.stringify({ error: 'Order is not in paid status' }), { status: 400 });
+      return res.status(400).json({ error: 'Order is not in paid status' });
     }
 
-    const actualAmount = rzpOrder.amount; // The authoritative bid amount
+    const actualAmount = rzpOrder.amount;
 
-    // 6. Slot Logic & Minimum Outbid Enforcement
     const { data: existingSlot, error: fetchError } = await supabase
       .from('slots')
       .select('*')
@@ -113,15 +99,15 @@ export default async function handler(request) {
       .single();
 
     if (fetchError || !existingSlot) {
-      return new Response(JSON.stringify({ error: 'Slot not found.' }), { status: 404 });
+      return res.status(404).json({ error: 'Slot not found.' });
     }
 
     if (existingSlot.status === 'live' && slotId === 'big-3') {
-       return new Response(JSON.stringify({ error: 'This slot is permanently locked.' }), { status: 400 });
+       return res.status(400).json({ error: 'This slot is permanently locked.' });
     }
     
     if (existingSlot.status === 'live' && existingSlot.size === 'micro') {
-       return new Response(JSON.stringify({ error: 'This fixed-price slot has already been purchased.' }), { status: 400 });
+       return res.status(400).json({ error: 'This fixed-price slot has already been purchased.' });
     }
 
     if (existingSlot.status === 'live') {
@@ -137,16 +123,14 @@ export default async function handler(request) {
        }
 
        if (actualAmount < minOutbid) {
-         return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400 });
+         return res.status(400).json({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` });
        }
     } else {
-       // Slot is available
        if (actualAmount < existingSlot.current_bid) {
-         return new Response(JSON.stringify({ error: 'Bid amount is below the starting price.' }), { status: 400 });
+         return res.status(400).json({ error: 'Bid amount is below the starting price.' });
        }
     }
 
-    // 7. Upload Logo (if provided)
     let uploadedLogoUrl = null;
     if (logoBase64 && logoMime) {
       try {
@@ -163,13 +147,10 @@ export default async function handler(request) {
         const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
         uploadedLogoUrl = publicUrl;
       } catch (err) {
-        console.error('Logo upload error:', err);
-        return new Response(JSON.stringify({ error: 'Invalid image format or upload failed.' }), { status: 500 });
+        return res.status(500).json({ error: 'Invalid image format or upload failed.' });
       }
     }
     
-    // 8. Atomic Database Update (Race condition prevention)
-    // We only update if the current bid is strictly less than or equal to our authoritative amount
     const { data: updatedSlot, error: updateError } = await supabase
       .from('slots')
       .update({
@@ -185,20 +166,17 @@ export default async function handler(request) {
       .select();
 
     if (updateError || !updatedSlot || updatedSlot.length === 0) {
-      console.error('Atomic update failed. Race condition or error:', updateError);
-      return new Response(JSON.stringify({ error: 'Slot update failed. Someone may have placed a higher bid simultaneously.' }), { status: 409 });
+      return res.status(409).json({ error: 'Slot update failed. Someone may have placed a higher bid simultaneously.' });
     }
 
-    // 9. Mark Order as Verified (Commit Idempotency)
     await supabase
       .from('orders')
       .update({ status: 'verified', user_data: JSON.stringify({ brandName, website, xHandle }) })
       .eq('razorpay_order_id', razorpay_order_id);
 
-    return new Response(JSON.stringify({ success: true, message: 'Payment verified securely!' }), { status: 200 });
+    return res.status(200).json({ success: true, message: 'Payment verified securely!' });
 
   } catch (error) {
-    console.error('Verification error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error during verification' }), { status: 500 });
+    return res.status(500).json({ error: 'Internal server error during verification' });
   }
 }

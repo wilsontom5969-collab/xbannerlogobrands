@@ -102,9 +102,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Slot not found.' });
     }
 
-    if (existingSlot.status === 'live' && slotId === 'big-3') {
-       return res.status(400).json({ error: 'This slot is permanently locked.' });
-    }
+
     
     if (existingSlot.status === 'live' && existingSlot.size === 'micro') {
        return res.status(400).json({ error: 'This fixed-price slot has already been purchased.' });

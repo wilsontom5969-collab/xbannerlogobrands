@@ -82,7 +82,8 @@ export default async function handler(request) {
     const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
       headers: { 
         'Authorization': `Basic ${auth}`,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'Banner-App/1.0'
       }
     });
 

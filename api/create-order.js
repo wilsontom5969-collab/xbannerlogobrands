@@ -48,7 +48,8 @@ export default async function handler(request) {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'Banner-App/1.0'
       },
       body: JSON.stringify({
         amount: amount, // Razorpay expects amount in paise (e.g., 50000 = 500 INR)

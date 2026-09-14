@@ -125,9 +125,22 @@ function App() {
           <p>Great question. This funds my unemployment. Consider yourself a very small, very confused investor in my life.</p>
         </section>
 
-        <section className="mb-16">
-          <h2>About the Founder</h2>
-          <p>Hey, I'm Wilson. Retired agency owner, current 3am shitposter, full-time caffeine dependent. Built stuff before. This is probably the weirdest one, which usually means it's the right one.</p>
+        <section className="mb-16" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+          <img 
+            src="/founder.jpg" 
+            alt="Wilson" 
+            style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }} 
+          />
+          <div style={{ flex: '1 1 300px' }}>
+            <p style={{ fontSize: '1rem', marginBottom: '1rem', color: '#e7e9ea' }}>
+              Hey, I'm Wilson. Retired agency owner, current 3am shitposter, full-time caffeine dependent. Built stuff before. This is probably the weirdest one, which usually means it's the right one.
+            </p>
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <a href="https://instagram.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>Instagram</a>
+              <a href="https://x.com/writtenbywilson" target="_blank" rel="noreferrer" style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>X (Twitter)</a>
+              <a href="https://linkedin.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>LinkedIn</a>
+            </div>
+          </div>
         </section>
       </main>
 

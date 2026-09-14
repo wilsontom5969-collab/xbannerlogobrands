@@ -129,7 +129,8 @@ function App() {
           <img 
             src="/founder.png" 
             alt="Wilson" 
-            style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }} 
+            className="founder-img"
+            style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover' }} 
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           <div style={{ flex: '1 1 300px' }}>

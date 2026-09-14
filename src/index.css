@@ -156,3 +156,12 @@ p {
   color: #536471;
   font-size: 1.05rem;
 }
+
+.founder-img {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.founder-img:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(235, 102, 103, 0.4);
+}

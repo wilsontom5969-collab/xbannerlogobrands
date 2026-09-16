@@ -139,7 +139,7 @@ function App() {
             </p>
             <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'center' }}>
               {/* Instagram */}
-              <a href="https://instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+              <a href="https://www.instagram.com/wil50n_7/" target="_blank" rel="noreferrer" aria-label="Instagram">
                 <img src="/instagram.png" alt="Instagram" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               </a>
               
@@ -149,8 +149,13 @@ function App() {
               </a>
 
               {/* LinkedIn */}
-              <a href="https://linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+              <a href="https://www.linkedin.com/in/wilson-tom-869591210/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
                 <img src="/linkedin.png" alt="LinkedIn" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+              </a>
+
+              {/* Threads */}
+              <a href="https://www.threads.com/@wil50n_7" target="_blank" rel="noreferrer" aria-label="Threads">
+                <img src="/threads.png" alt="Threads" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               </a>
             </div>
           </div>

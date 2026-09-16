@@ -84,7 +84,15 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slotId: slot.id, amount: finalAmount })
+        body: JSON.stringify({ 
+          slotId: slot.id, 
+          amount: finalAmount,
+          brandName,
+          website,
+          xHandle: handle,
+          logoBase64,
+          logoMime
+        })
       });
 
       const orderData = await response.json();
@@ -120,13 +128,7 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
-                slotId: slot.id,
-                brandName,
-                website,
-                xHandle: handle,
-                bidAmount: finalAmount,
-                logoBase64,
-                logoMime
+                slotId: slot.id
               })
             });
             

@@ -14,20 +14,11 @@ export default async function handler(req, res) {
       razorpay_payment_id,
       razorpay_order_id,
       razorpay_signature,
-      slotId,
-      brandName,
-      website,
-      xHandle,
-      logoBase64,
-      logoMime
+      slotId
     } = body;
 
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !slotId) {
       return res.status(400).json({ error: 'Missing payment details' });
-    }
-
-    if (logoBase64 && logoBase64.length > 2.8 * 1024 * 1024) {
-      return res.status(413).json({ error: 'Logo size exceeds 2MB limit' });
     }
 
     const secret = env.RAZORPAY_KEY_SECRET;
@@ -129,35 +120,17 @@ export default async function handler(req, res) {
        }
     }
 
-    let uploadedLogoUrl = null;
-    if (logoBase64 && logoMime) {
-      try {
-        const buffer = Uint8Array.from(atob(logoBase64), c => c.charCodeAt(0));
-        const fileExt = logoMime.split('/')[1] || 'png';
-        const fileName = `${slotId}-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(fileName, buffer, { contentType: logoMime, upsert: true });
-          
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-        uploadedLogoUrl = publicUrl;
-      } catch (err) {
-        return res.status(500).json({ error: 'Invalid image format or upload failed.' });
-      }
-    }
+    const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     
     const { data: updatedSlot, error: updateError } = await supabase
       .from('slots')
       .update({
         status: 'live',
-        holder_name: brandName,
-        website_url: website,
-        x_handle: xHandle || null,
+        holder_name: userData.brandName,
+        website_url: userData.website,
+        x_handle: userData.xHandle || null,
         current_bid: actualAmount,
-        logo_url: uploadedLogoUrl || existingSlot.logo_url || null
+        logo_url: userData.logo_url || existingSlot.logo_url || null
       })
       .eq('id', slotId)
       .lte('current_bid', actualAmount)
@@ -169,7 +142,7 @@ export default async function handler(req, res) {
 
     await supabase
       .from('orders')
-      .update({ status: 'verified', user_data: JSON.stringify({ brandName, website, xHandle }) })
+      .update({ status: 'verified' })
       .eq('razorpay_order_id', razorpay_order_id);
 
     return res.status(200).json({ success: true, message: 'Payment verified securely!' });

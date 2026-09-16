@@ -54,16 +54,14 @@ export default async function handler(req, res) {
       const orderData = event.payload.payment?.entity || event.payload.order?.entity;
       const razorpay_order_id = orderData?.order_id;
 
-      if (!razorpay_order_id) {
-        return res.status(400).json({ error: 'Order ID not found in payload' });
-      }
+      const razorpay_event_id = req.headers['x-razorpay-event-id'];
 
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Check current order status
       const { data: dbOrder, error: orderFetchError } = await supabase
         .from('orders')
-        .select('id, status')
+        .select('id, status, slot_id, user_data, amount')
         .eq('razorpay_order_id', razorpay_order_id)
         .single();
 
@@ -72,15 +70,55 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Order not found, ignored.' });
       }
 
-      // Idempotency: Ignore if already handled by verify-payment or previous webhook
-      if (dbOrder.status === 'verified' || dbOrder.status === 'webhook_paid') {
+      // Check Idempotency by Event ID or order status
+      const { data: duplicateEvent } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('webhook_event_id', razorpay_event_id)
+        .single();
+        
+      if (duplicateEvent || dbOrder.status === 'verified' || dbOrder.status === 'webhook_paid') {
         return res.status(200).json({ success: true, message: 'Already processed' });
       }
 
-      // Update the order status to webhook_paid
+      const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
+      const slotId = dbOrder.slot_id;
+      const actualAmount = dbOrder.amount;
+
+      // 1. Get current slot data
+      const { data: existingSlot } = await supabase
+        .from('slots')
+        .select('*')
+        .eq('id', slotId)
+        .single();
+        
+      if (!existingSlot) {
+        return res.status(404).json({ error: 'Slot not found' });
+      }
+
+      // 2. Perform secure atomic slot update
+      const { data: updatedSlot, error: slotUpdateError } = await supabase
+        .from('slots')
+        .update({
+          status: 'live',
+          holder_name: userData.brandName,
+          website_url: userData.website,
+          x_handle: userData.xHandle || null,
+          current_bid: actualAmount,
+          logo_url: userData.logo_url || existingSlot.logo_url || null
+        })
+        .eq('id', slotId)
+        .lte('current_bid', actualAmount)
+        .select();
+
+      if (slotUpdateError || !updatedSlot || updatedSlot.length === 0) {
+        console.error('Webhook: Slot update failed (possibly outbid concurrently)');
+      }
+
+      // 3. Update the order status to webhook_paid and log event ID
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ status: 'webhook_paid' })
+        .update({ status: 'webhook_paid', webhook_event_id: razorpay_event_id })
         .eq('razorpay_order_id', razorpay_order_id);
 
       if (updateError) {

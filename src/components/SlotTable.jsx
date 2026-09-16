@@ -11,7 +11,7 @@ export default function SlotTable({ slots, onCheckout }) {
           </tr>
         </thead>
         <tbody>
-          {slots.map(slot => {
+          {[...slots].sort((a, b) => b.current_bid - a.current_bid).map(slot => {
             const isAvailable = slot.status === 'available';
             const priceStr = `₹${(slot.current_bid / 100).toLocaleString()}`;
             

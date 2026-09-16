@@ -103,31 +103,22 @@ function App() {
           </section>
 
           <section id="how-it-works" className="mb-16">
-            <h2>How it works</h2>
+            <h2>how it works</h2>
             <div style={{ 
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '2rem', marginTop: '2rem'
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+              gap: '3rem', marginTop: '3rem'
             }}>
-              <div className="step-card">
-                <span className="step-number">1</span>
-                <div className="step-content">
-                  <h3 className="step-title">1. Pick a spot</h3>
-                  <p style={{ fontSize: '0.95rem' }}>Choose between Micro, Small (fixed price), or Big (bidding war) slots.</p>
-                </div>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>1. pick a spot</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>choose between micro, small (fixed price), or big (bidding war) slots.</p>
               </div>
-              <div className="step-card">
-                <span className="step-number">2</span>
-                <div className="step-content">
-                  <h3 className="step-title">2. Pay / Bid</h3>
-                  <p style={{ fontSize: '0.95rem' }}>Enter your brand info, upload a logo, and checkout. Bidders only pay if they win.</p>
-                </div>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>2. pay / bid</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>enter your brand info, upload a logo, and checkout. bidders only pay if they win.</p>
               </div>
-              <div className="step-card">
-                <span className="step-number">3</span>
-                <div className="step-content">
-                  <h3 className="step-title">3. Go Live</h3>
-                  <p style={{ fontSize: '0.95rem' }}>Once approved, your logo is live on the X banner for the world to see.</p>
-                </div>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>3. go live</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>once approved, your logo is live on the x banner for the world to see.</p>
               </div>
             </div>
           </section>

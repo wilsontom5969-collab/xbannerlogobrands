@@ -11,34 +11,39 @@ export default async function handler(req, res) {
     const body = req.body;
     
     const {
-      razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_signature,
-      slotId
+      txnid,
+      status,
+      hash,
+      amount,
+      mihpayid,
+      email = '',
+      firstname = '',
+      productinfo = '',
+      key
     } = body;
 
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !slotId) {
+    if (!txnid || !status || !hash || !amount) {
       return res.status(400).json({ error: 'Missing payment details' });
     }
 
-    const secret = env.RAZORPAY_KEY_SECRET;
-    const keyId = env.RAZORPAY_KEY_ID;
+    const salt = env.PAYU_SALT;
+    const keyId = env.PAYU_MERCHANT_KEY;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!secret || !keyId || !supabaseUrl || !supabaseServiceKey) {
+    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    const text = `${razorpay_order_id}|${razorpay_payment_id}`;
+    // Reverse hash formula: SALT|status|||||||||||email|firstname|productinfo|amount|txnid|key
+    const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
+    
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const cryptoKey = await webcrypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const signatureBuffer = await webcrypto.subtle.sign('HMAC', cryptoKey, encoder.encode(text));
-    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-    const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashBuffer = await webcrypto.subtle.digest('SHA-512', encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    if (expectedSignature !== razorpay_signature) {
+    if (expectedSignature !== hash) {
       return res.status(400).json({ error: 'Invalid payment signature. Payment rejected.' });
     }
 
@@ -47,7 +52,7 @@ export default async function handler(req, res) {
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('razorpay_order_id', razorpay_order_id)
+      .eq('razorpay_order_id', txnid)
       .single();
 
     if (orderFetchError || !dbOrder) {
@@ -55,33 +60,15 @@ export default async function handler(req, res) {
     }
 
     if (dbOrder.status === 'verified') {
-      return res.status(400).json({ error: 'This payment has already been processed.' });
+      return res.redirect(302, '/?payment_success=true');
     }
 
-    const auth = btoa(`${keyId}:${secret}`);
-    const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
-      headers: { 
-        'Authorization': `Basic ${auth}`,
-        'Accept': 'application/json',
-        'User-Agent': 'Node-Fetch/1.0'
-      }
-    });
-
-    if (!razorpayResponse.ok) {
-      return res.status(500).json({ error: 'Failed to verify order with Razorpay' });
+    if (status !== 'success') {
+      return res.redirect(302, '/?payment_failed=true');
     }
 
-    const rzpOrder = await razorpayResponse.json();
-
-    if (!rzpOrder.receipt.startsWith(`slot_${slotId}_`)) {
-      return res.status(400).json({ error: 'Payment slot mismatch detected' });
-    }
-
-    if (rzpOrder.status !== 'paid') {
-      return res.status(400).json({ error: 'Order is not in paid status' });
-    }
-
-    const actualAmount = rzpOrder.amount;
+    const actualAmount = parseFloat(amount);
+    const slotId = dbOrder.slot_id;
 
     const { data: existingSlot, error: fetchError } = await supabase
       .from('slots')
@@ -143,9 +130,9 @@ export default async function handler(req, res) {
     await supabase
       .from('orders')
       .update({ status: 'verified' })
-      .eq('razorpay_order_id', razorpay_order_id);
+      .eq('razorpay_order_id', txnid);
 
-    return res.status(200).json({ success: true, message: 'Payment verified securely!' });
+    return res.redirect(302, '/?payment_success=true');
 
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error during verification' });

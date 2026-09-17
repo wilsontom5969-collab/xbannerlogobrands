@@ -21140,81 +21140,107 @@ __name(shouldShowDeprecationWarning, "shouldShowDeprecationWarning");
 if (shouldShowDeprecationWarning()) console.warn("\u26A0\uFE0F  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: https://github.com/orgs/supabase/discussions/45715");
 
 // api/create-order.js
+function getMimeTypeFromBuffer(buffer) {
+  if (buffer.length < 4) return null;
+  const header = buffer.slice(0, 4);
+  if (header[0] === 137 && header[1] === 80 && header[2] === 78 && header[3] === 71) return "image/png";
+  if (header[0] === 255 && header[1] === 216 && header[2] === 255) return "image/jpeg";
+  if (header[0] === 71 && header[1] === 73 && header[2] === 70 && header[3] === 56) return "image/gif";
+  return null;
+}
+__name(getMimeTypeFromBuffer, "getMimeTypeFromBuffer");
 async function onRequestPost2(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
-    const { slotId, amount } = body;
+    const { slotId, amount, brandName, website, xHandle, logoBase64 } = body;
     if (!slotId || !amount || typeof amount !== "number" || amount <= 0) {
-      return new Response(JSON.stringify({ error: "Invalid slot ID or bid amount" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return new Response(JSON.stringify({ error: "Invalid slot ID or bid amount" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
-    const keyId = env.RAZORPAY_KEY_ID;
-    const keySecret = env.RAZORPAY_KEY_SECRET;
+    const keyId = env.PAYU_MERCHANT_KEY;
+    const keySecret = env.PAYU_SALT;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
     if (!keyId || !keySecret || !supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing credentials in server environment variables.");
-      return new Response(JSON.stringify({ error: "Payment gateway configuration error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    const auth = btoa(`${keyId}:${keySecret}`);
-    const receiptId = `slot_${slotId}_${Date.now()}`;
-    const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${auth}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        amount,
-        // Razorpay expects amount in paise (e.g., 50000 = 500 INR)
-        currency: "INR",
-        receipt: receiptId
-        // Unique receipt ID for tracking and slot binding
-      })
-    });
-    const orderData = await razorpayResponse.json();
-    if (!razorpayResponse.ok) {
-      console.error("Razorpay Error:", orderData);
-      return new Response(JSON.stringify({ error: "Failed to create Razorpay order" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+      console.error("Payment gateway configuration error");
+      return new Response(JSON.stringify({ error: "Payment gateway configuration error" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: slot, error: slotError } = await supabase.from("slots").select("*").eq("id", slotId).single();
+    if (slotError || !slot) return new Response(JSON.stringify({ error: "Slot not found" }), { status: 404, headers: { "Content-Type": "application/json" } });
+    if (slot.status === "live" && slot.size === "micro") {
+      return new Response(JSON.stringify({ error: "This fixed-price slot has already been purchased." }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    let minRequired = slot.current_bid;
+    if (slot.status === "live") {
+      if (slot.size === "big") {
+        minRequired = Math.ceil(slot.current_bid * 1.1);
+      } else if (slot.size === "small") {
+        minRequired = slot.current_bid + 100;
+      }
+      if (minRequired <= slot.current_bid) minRequired = slot.current_bid + 100;
+    }
+    if (amount < minRequired) {
+      return new Response(JSON.stringify({ error: `Amount too low. Minimum required is ${minRequired / 100} INR.` }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    let uploadedLogoUrl = null;
+    if (logoBase64) {
+      try {
+        const buffer = Uint8Array.from(atob(logoBase64), (c) => c.charCodeAt(0));
+        if (buffer.length > 2.8 * 1024 * 1024) return new Response(JSON.stringify({ error: "Logo size exceeds 2MB limit" }), { status: 413, headers: { "Content-Type": "application/json" } });
+        const actualMime = getMimeTypeFromBuffer(buffer);
+        if (!actualMime) return new Response(JSON.stringify({ error: "Invalid image format. Only PNG, JPG, GIF allowed." }), { status: 400, headers: { "Content-Type": "application/json" } });
+        const fileExt = actualMime.split("/")[1];
+        const fileName = `${slotId}-pending-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from("logos").upload(fileName, buffer, { contentType: actualMime, upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(fileName);
+        uploadedLogoUrl = publicUrl;
+      } catch (err) {
+        return new Response(JSON.stringify({ error: "Image processing or upload failed." }), { status: 500, headers: { "Content-Type": "application/json" } });
+      }
+    }
+    const txnid = "txn_" + Date.now() + "_" + Math.floor(Math.random() * 1e3);
+    const productinfo = `Slot_${slotId}`;
+    const firstname = brandName || "User";
+    const email = "customer@letthebannercook.com";
+    const hashString = `${keyId}|${txnid}|${amount}|${productinfo}|${firstname}|${email}||||||||||${keySecret}`;
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-512", encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    const orderData = {
+      id: txnid,
+      amount
+    };
+    const userData = JSON.stringify({ brandName, website, xHandle, logo_url: uploadedLogoUrl });
     const { error: insertError } = await supabase.from("orders").insert({
       id: crypto.randomUUID(),
       razorpay_order_id: orderData.id,
       amount: orderData.amount,
       status: "created",
-      slot_id: slotId
+      slot_id: slotId,
+      user_data: userData
     });
     if (insertError) {
       console.error("Error saving order to Supabase:", insertError);
-      return new Response(JSON.stringify({ error: "Failed to register order securely" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+      return new Response(JSON.stringify({ error: "Failed to register order securely" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
     return new Response(JSON.stringify({
       order_id: orderData.id,
       amount: orderData.amount,
-      currency: orderData.currency
+      hash,
+      key: keyId,
+      productinfo,
+      firstname,
+      email
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error("Server error processing order:", error);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
 __name(onRequestPost2, "onRequestPost");
@@ -21252,77 +21278,53 @@ __name(onRequestGet, "onRequestGet");
 async function onRequestPost3(context) {
   try {
     const { request, env } = context;
-    const body = await request.json();
-    const {
-      razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_signature,
-      slotId,
-      brandName,
-      website,
-      xHandle,
-      logoBase64,
-      logoMime
-    } = body;
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !slotId) {
-      return new Response(JSON.stringify({ error: "Missing payment details" }), { status: 400 });
+    const formData = await request.formData();
+    const txnid = formData.get("txnid");
+    const status = formData.get("status");
+    const hash = formData.get("hash");
+    const amount = formData.get("amount");
+    const mihpayid = formData.get("mihpayid");
+    const email = formData.get("email") || "";
+    const firstname = formData.get("firstname") || "";
+    const productinfo = formData.get("productinfo") || "";
+    const key = formData.get("key");
+    if (!txnid || !status || !hash || !amount) {
+      return new Response(JSON.stringify({ error: "Missing payment details" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
-    if (logoBase64 && logoBase64.length > 2.8 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: "Logo size exceeds 2MB limit" }), { status: 413 });
-    }
-    const secret = env.RAZORPAY_KEY_SECRET;
-    const keyId = env.RAZORPAY_KEY_ID;
+    const salt = env.PAYU_SALT;
+    const keyId = env.PAYU_MERCHANT_KEY;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!secret || !keyId || !supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing required environment variables");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500 });
+    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
-    const text = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const hashString = `${salt}|${status}||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(text));
-    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-    const expectedSignature = signatureArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    if (expectedSignature !== razorpay_signature) {
-      console.error("Signature mismatch");
-      return new Response(JSON.stringify({ error: "Invalid payment signature. Payment rejected." }), { status: 400 });
+    const hashBuffer = await crypto.subtle.digest("SHA-512", encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expectedSignature = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (expectedSignature !== hash) {
+      return new Response(JSON.stringify({ error: "Invalid payment signature. Payment rejected." }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: dbOrder, error: orderFetchError } = await supabase.from("orders").select("*").eq("razorpay_order_id", razorpay_order_id).single();
+    const { data: dbOrder, error: orderFetchError } = await supabase.from("orders").select("*").eq("razorpay_order_id", txnid).single();
     if (orderFetchError || !dbOrder) {
-      console.error("Order not found in DB:", orderFetchError);
-      return new Response(JSON.stringify({ error: "Order not found in system" }), { status: 404 });
+      return new Response(JSON.stringify({ error: "Order not found in system" }), { status: 404, headers: { "Content-Type": "application/json" } });
     }
     if (dbOrder.status === "verified") {
-      return new Response(JSON.stringify({ error: "This payment has already been processed." }), { status: 400 });
+      return Response.redirect(new URL("/?payment_success=true", request.url).toString(), 302);
     }
-    const auth = btoa(`${keyId}:${secret}`);
-    const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
-      headers: { "Authorization": `Basic ${auth}` }
-    });
-    if (!razorpayResponse.ok) {
-      return new Response(JSON.stringify({ error: "Failed to verify order with Razorpay" }), { status: 500 });
+    if (status !== "success") {
+      return Response.redirect(new URL("/?payment_failed=true", request.url).toString(), 302);
     }
-    const rzpOrder = await razorpayResponse.json();
-    if (!rzpOrder.receipt.startsWith(`slot_${slotId}_`)) {
-      console.error(`Slot mismatch: Order receipt ${rzpOrder.receipt} does not match requested slot ${slotId}`);
-      return new Response(JSON.stringify({ error: "Payment slot mismatch detected" }), { status: 400 });
-    }
-    if (rzpOrder.status !== "paid") {
-      return new Response(JSON.stringify({ error: "Order is not in paid status" }), { status: 400 });
-    }
-    const actualAmount = rzpOrder.amount;
+    const actualAmount = parseFloat(amount);
+    const slotId = dbOrder.slot_id;
     const { data: existingSlot, error: fetchError } = await supabase.from("slots").select("*").eq("id", slotId).single();
     if (fetchError || !existingSlot) {
-      return new Response(JSON.stringify({ error: "Slot not found." }), { status: 404 });
-    }
-    if (existingSlot.status === "live" && slotId === "big-3") {
-      return new Response(JSON.stringify({ error: "This slot is permanently locked." }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Slot not found." }), { status: 404, headers: { "Content-Type": "application/json" } });
     }
     if (existingSlot.status === "live" && existingSlot.size === "micro") {
-      return new Response(JSON.stringify({ error: "This fixed-price slot has already been purchased." }), { status: 400 });
+      return new Response(JSON.stringify({ error: "This fixed-price slot has already been purchased." }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
     if (existingSlot.status === "live") {
       let minOutbid = existingSlot.current_bid;
@@ -21335,48 +21337,106 @@ async function onRequestPost3(context) {
         minOutbid = existingSlot.current_bid + 100;
       }
       if (actualAmount < minOutbid) {
-        return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400 });
+        return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
     } else {
       if (actualAmount < existingSlot.current_bid) {
-        return new Response(JSON.stringify({ error: "Bid amount is below the starting price." }), { status: 400 });
+        return new Response(JSON.stringify({ error: "Bid amount is below the starting price." }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
     }
-    let uploadedLogoUrl = null;
-    if (logoBase64 && logoMime) {
-      try {
-        const buffer = Uint8Array.from(atob(logoBase64), (c) => c.charCodeAt(0));
-        const fileExt = logoMime.split("/")[1] || "png";
-        const fileName = `${slotId}-${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from("logos").upload(fileName, buffer, { contentType: logoMime, upsert: true });
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(fileName);
-        uploadedLogoUrl = publicUrl;
-      } catch (err) {
-        console.error("Logo upload error:", err);
-        return new Response(JSON.stringify({ error: "Invalid image format or upload failed." }), { status: 500 });
-      }
-    }
+    const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     const { data: updatedSlot, error: updateError } = await supabase.from("slots").update({
       status: "live",
-      holder_name: brandName,
-      website_url: website,
-      x_handle: xHandle || null,
+      holder_name: userData.brandName,
+      website_url: userData.website,
+      x_handle: userData.xHandle || null,
       current_bid: actualAmount,
-      logo_url: uploadedLogoUrl || existingSlot.logo_url || null
+      logo_url: userData.logo_url || existingSlot.logo_url || null
     }).eq("id", slotId).lte("current_bid", actualAmount).select();
     if (updateError || !updatedSlot || updatedSlot.length === 0) {
-      console.error("Atomic update failed. Race condition or error:", updateError);
-      return new Response(JSON.stringify({ error: "Slot update failed. Someone may have placed a higher bid simultaneously." }), { status: 409 });
+      return new Response(JSON.stringify({ error: "Slot update failed. Someone may have placed a higher bid simultaneously." }), { status: 409, headers: { "Content-Type": "application/json" } });
     }
-    await supabase.from("orders").update({ status: "verified", user_data: JSON.stringify({ brandName, website, xHandle }) }).eq("razorpay_order_id", razorpay_order_id);
-    return new Response(JSON.stringify({ success: true, message: "Payment verified securely!" }), { status: 200 });
+    await supabase.from("orders").update({ status: "verified" }).eq("razorpay_order_id", txnid);
+    return Response.redirect(new URL("/?payment_success=true", request.url).toString(), 302);
   } catch (error) {
-    console.error("Verification error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error during verification" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal server error during verification" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
 __name(onRequestPost3, "onRequestPost");
+
+// api/webhook.js
+async function onRequestPost4(context) {
+  try {
+    const { request, env } = context;
+    const formData = await request.formData();
+    const txnid = formData.get("txnid");
+    const status = formData.get("status");
+    const hash = formData.get("hash");
+    const amount = formData.get("amount");
+    const mihpayid = formData.get("mihpayid");
+    const email = formData.get("email") || "";
+    const firstname = formData.get("firstname") || "";
+    const productinfo = formData.get("productinfo") || "";
+    if (!txnid || !status || !hash || !amount) {
+      return new Response(JSON.stringify({ error: "Missing payment details in webhook" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    const salt = env.PAYU_SALT;
+    const keyId = env.PAYU_MERCHANT_KEY;
+    const supabaseUrl = env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing webhook configuration in environment variables.");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+    const hashString = `${salt}|${status}||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-512", encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expectedSignature = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (expectedSignature !== hash) {
+      return new Response(JSON.stringify({ error: "Invalid webhook signature" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    if (status !== "success") {
+      return new Response(JSON.stringify({ success: true, message: "Payment not successful, ignored" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: dbOrder, error: orderFetchError } = await supabase.from("orders").select("id, status, slot_id, user_data, amount").eq("razorpay_order_id", txnid).single();
+    if (orderFetchError || !dbOrder) {
+      return new Response(JSON.stringify({ success: true, message: "Order not found, ignored." }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    if (dbOrder.status === "verified" || dbOrder.status === "webhook_paid") {
+      return new Response(JSON.stringify({ success: true, message: "Already processed" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
+    const slotId = dbOrder.slot_id;
+    const actualAmount = dbOrder.amount;
+    const { data: existingSlot } = await supabase.from("slots").select("*").eq("id", slotId).single();
+    if (!existingSlot) {
+      return new Response(JSON.stringify({ error: "Slot not found" }), { status: 404, headers: { "Content-Type": "application/json" } });
+    }
+    const { data: updatedSlot, error: slotUpdateError } = await supabase.from("slots").update({
+      status: "live",
+      holder_name: userData.brandName,
+      website_url: userData.website,
+      x_handle: userData.xHandle || null,
+      current_bid: actualAmount,
+      logo_url: userData.logo_url || existingSlot.logo_url || null
+    }).eq("id", slotId).lte("current_bid", actualAmount).select();
+    if (slotUpdateError || !updatedSlot || updatedSlot.length === 0) {
+      console.error("Webhook: Slot update failed (possibly outbid concurrently)");
+    }
+    const { error: updateError } = await supabase.from("orders").update({ status: "webhook_paid", webhook_event_id: mihpayid }).eq("razorpay_order_id", txnid);
+    if (updateError) {
+      console.error("Webhook: Failed to update order status:", updateError);
+      return new Response(JSON.stringify({ error: "Failed to update order status" }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ success: true, message: "Webhook processed successfully" }), { status: 200, headers: { "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error processing webhook" }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
+}
+__name(onRequestPost4, "onRequestPost");
 
 // api/get-slots.js
 async function onRequest(context) {
@@ -21407,7 +21467,7 @@ async function onRequest(context) {
 }
 __name(onRequest, "onRequest");
 
-// ../.wrangler/tmp/pages-3CBS5H/functionsRoutes-0.14140227418824103.mjs
+// ../.wrangler/tmp/pages-2zr5PY/functionsRoutes-0.3593154542111494.mjs
 var routes = [
   {
     routePath: "/api/bids",
@@ -21436,6 +21496,13 @@ var routes = [
     method: "POST",
     middlewares: [],
     modules: [onRequestPost3]
+  },
+  {
+    routePath: "/api/webhook",
+    mountPath: "/api",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost4]
   },
   {
     routePath: "/api/get-slots",
@@ -21939,7 +22006,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-cIDZl6/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-0bfIL6/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -21971,7 +22038,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-cIDZl6/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-0bfIL6/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
@@ -22073,4 +22140,4 @@ export {
   __INTERNAL_WRANGLER_MIDDLEWARE__,
   middleware_loader_entry_default as default
 };
-//# sourceMappingURL=functionsWorker-0.8290336954361976.mjs.map
+//# sourceMappingURL=functionsWorker-0.03608829621947518.mjs.map

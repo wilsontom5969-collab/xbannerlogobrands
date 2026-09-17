@@ -1,19 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
-import { webcrypto } from 'crypto';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
+export async function onRequestPost(context) {
   try {
-    const env = process.env;
+    const { request, env } = context;
+    
+    const formData = await request.formData();
+    const txnid = formData.get('txnid');
+    const status = formData.get('status');
+    const hash = formData.get('hash');
+    const amount = formData.get('amount');
+    const mihpayid = formData.get('mihpayid');
+    const email = formData.get('email') || '';
+    const firstname = formData.get('firstname') || '';
+    const productinfo = formData.get('productinfo') || '';
+
+    if (!txnid || !status || !hash || !amount) {
+      return new Response(JSON.stringify({ error: 'Missing payment details in webhook' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const salt = env.PAYU_SALT;
     const keyId = env.PAYU_MERCHANT_KEY;
     const supabaseUrl = env.VITE_SUPABASE_URL;
@@ -21,29 +25,7 @@ export default async function handler(req, res) {
 
     if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing webhook configuration in environment variables.');
-      return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    // Read raw body
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    const rawBody = Buffer.concat(chunks).toString('utf8');
-    
-    const params = new URLSearchParams(rawBody);
-    
-    const txnid = params.get('txnid');
-    const status = params.get('status');
-    const hash = params.get('hash');
-    const amount = params.get('amount');
-    const mihpayid = params.get('mihpayid');
-    const email = params.get('email') || '';
-    const firstname = params.get('firstname') || '';
-    const productinfo = params.get('productinfo') || '';
-
-    if (!txnid || !status || !hash || !amount) {
-      return res.status(400).json({ error: 'Missing payment details in webhook' });
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify Signature
@@ -51,16 +33,16 @@ export default async function handler(req, res) {
     const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
     
     const encoder = new TextEncoder();
-    const hashBuffer = await webcrypto.subtle.digest('SHA-512', encoder.encode(hashString));
+    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     if (expectedSignature !== hash) {
-      return res.status(400).json({ error: 'Invalid webhook signature' });
+      return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     if (status !== 'success') {
-      return res.status(200).json({ success: true, message: 'Payment not successful, ignored' });
+      return new Response(JSON.stringify({ success: true, message: 'Payment not successful, ignored' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -73,11 +55,11 @@ export default async function handler(req, res) {
       .single();
 
     if (orderFetchError || !dbOrder) {
-      return res.status(200).json({ success: true, message: 'Order not found, ignored.' });
+      return new Response(JSON.stringify({ success: true, message: 'Order not found, ignored.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     if (dbOrder.status === 'verified' || dbOrder.status === 'webhook_paid') {
-      return res.status(200).json({ success: true, message: 'Already processed' });
+      return new Response(JSON.stringify({ success: true, message: 'Already processed' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
@@ -92,7 +74,7 @@ export default async function handler(req, res) {
       .single();
       
     if (!existingSlot) {
-      return res.status(404).json({ error: 'Slot not found' });
+      return new Response(JSON.stringify({ error: 'Slot not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // 2. Perform secure atomic slot update
@@ -122,13 +104,13 @@ export default async function handler(req, res) {
 
     if (updateError) {
       console.error('Webhook: Failed to update order status:', updateError);
-      return res.status(500).json({ error: 'Failed to update order status' });
+      return new Response(JSON.stringify({ error: 'Failed to update order status' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return res.status(200).json({ success: true, message: 'Webhook processed successfully' });
+    return new Response(JSON.stringify({ success: true, message: 'Webhook processed successfully' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {
     console.error('Webhook processing error:', error);
-    return res.status(500).json({ error: 'Internal server error processing webhook' });
+    return new Response(JSON.stringify({ error: 'Internal server error processing webhook' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }

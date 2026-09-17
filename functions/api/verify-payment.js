@@ -3,97 +3,67 @@ import { createClient } from '@supabase/supabase-js';
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    const body = await request.json();
     
-    const {
-      razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_signature,
-      slotId,
-      brandName,
-      website,
-      xHandle,
-      logoBase64,
-      logoMime
-    } = body;
+    // Parse form-urlencoded body
+    const formData = await request.formData();
+    const txnid = formData.get('txnid');
+    const status = formData.get('status');
+    const hash = formData.get('hash');
+    const amount = formData.get('amount');
+    const mihpayid = formData.get('mihpayid');
+    const email = formData.get('email') || '';
+    const firstname = formData.get('firstname') || '';
+    const productinfo = formData.get('productinfo') || '';
+    const key = formData.get('key');
 
-    // 1. Strict Request Validation
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !slotId) {
-      return new Response(JSON.stringify({ error: 'Missing payment details' }), { status: 400 });
+    if (!txnid || !status || !hash || !amount) {
+      return new Response(JSON.stringify({ error: 'Missing payment details' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Protect against massive payloads (limit Base64 to roughly 2MB -> ~2.8MB in base64 string length)
-    if (logoBase64 && logoBase64.length > 2.8 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: 'Logo size exceeds 2MB limit' }), { status: 413 });
-    }
-
-    const secret = env.RAZORPAY_KEY_SECRET;
-    const keyId = env.RAZORPAY_KEY_ID;
+    const salt = env.PAYU_SALT;
+    const keyId = env.PAYU_MERCHANT_KEY;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!secret || !keyId || !supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing required environment variables');
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500 });
+    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 2. Verify HMAC Signature
-    const text = `${razorpay_order_id}|${razorpay_payment_id}`;
+    // Reverse hash formula: SALT|status|||||||||||email|firstname|productinfo|amount|txnid|key
+    const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
+    
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(text));
-    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-    const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    if (expectedSignature !== razorpay_signature) {
-      console.error('Signature mismatch');
-      return new Response(JSON.stringify({ error: 'Invalid payment signature. Payment rejected.' }), { status: 400 });
+    if (expectedSignature !== hash) {
+      return new Response(JSON.stringify({ error: 'Invalid payment signature. Payment rejected.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Replay Protection (Idempotency)
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('razorpay_order_id', razorpay_order_id)
+      .eq('razorpay_order_id', txnid)
       .single();
 
     if (orderFetchError || !dbOrder) {
-      console.error('Order not found in DB:', orderFetchError);
-      return new Response(JSON.stringify({ error: 'Order not found in system' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Order not found in system' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     if (dbOrder.status === 'verified') {
-      return new Response(JSON.stringify({ error: 'This payment has already been processed.' }), { status: 400 });
+      return Response.redirect(new URL('/?payment_success=true', request.url).toString(), 302);
     }
 
-    // 4. Server-Side Razorpay Order Fetch
-    const auth = btoa(`${keyId}:${secret}`);
-    const razorpayResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
-      headers: { 'Authorization': `Basic ${auth}` }
-    });
-
-    if (!razorpayResponse.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to verify order with Razorpay' }), { status: 500 });
+    if (status !== 'success') {
+      return Response.redirect(new URL('/?payment_failed=true', request.url).toString(), 302);
     }
 
-    const rzpOrder = await razorpayResponse.json();
+    const actualAmount = parseFloat(amount);
+    const slotId = dbOrder.slot_id;
 
-    // 5. Order ↔ Slot Binding Verification
-    if (!rzpOrder.receipt.startsWith(`slot_${slotId}_`)) {
-      console.error(`Slot mismatch: Order receipt ${rzpOrder.receipt} does not match requested slot ${slotId}`);
-      return new Response(JSON.stringify({ error: 'Payment slot mismatch detected' }), { status: 400 });
-    }
-
-    if (rzpOrder.status !== 'paid') {
-      return new Response(JSON.stringify({ error: 'Order is not in paid status' }), { status: 400 });
-    }
-
-    const actualAmount = rzpOrder.amount; // The authoritative bid amount
-
-    // 6. Slot Logic & Minimum Outbid Enforcement
     const { data: existingSlot, error: fetchError } = await supabase
       .from('slots')
       .select('*')
@@ -101,15 +71,11 @@ export async function onRequestPost(context) {
       .single();
 
     if (fetchError || !existingSlot) {
-      return new Response(JSON.stringify({ error: 'Slot not found.' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Slot not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (existingSlot.status === 'live' && slotId === 'big-3') {
-       return new Response(JSON.stringify({ error: 'This slot is permanently locked.' }), { status: 400 });
-    }
-    
     if (existingSlot.status === 'live' && existingSlot.size === 'micro') {
-       return new Response(JSON.stringify({ error: 'This fixed-price slot has already been purchased.' }), { status: 400 });
+       return new Response(JSON.stringify({ error: 'This fixed-price slot has already been purchased.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     if (existingSlot.status === 'live') {
@@ -125,68 +91,42 @@ export async function onRequestPost(context) {
        }
 
        if (actualAmount < minOutbid) {
-         return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400 });
+         return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
        }
     } else {
-       // Slot is available
        if (actualAmount < existingSlot.current_bid) {
-         return new Response(JSON.stringify({ error: 'Bid amount is below the starting price.' }), { status: 400 });
+         return new Response(JSON.stringify({ error: 'Bid amount is below the starting price.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
        }
     }
 
-    // 7. Upload Logo (if provided)
-    let uploadedLogoUrl = null;
-    if (logoBase64 && logoMime) {
-      try {
-        const buffer = Uint8Array.from(atob(logoBase64), c => c.charCodeAt(0));
-        const fileExt = logoMime.split('/')[1] || 'png';
-        const fileName = `${slotId}-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(fileName, buffer, { contentType: logoMime, upsert: true });
-          
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-        uploadedLogoUrl = publicUrl;
-      } catch (err) {
-        console.error('Logo upload error:', err);
-        return new Response(JSON.stringify({ error: 'Invalid image format or upload failed.' }), { status: 500 });
-      }
-    }
+    const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     
-    // 8. Atomic Database Update (Race condition prevention)
-    // We only update if the current bid is strictly less than or equal to our authoritative amount
     const { data: updatedSlot, error: updateError } = await supabase
       .from('slots')
       .update({
         status: 'live',
-        holder_name: brandName,
-        website_url: website,
-        x_handle: xHandle || null,
+        holder_name: userData.brandName,
+        website_url: userData.website,
+        x_handle: userData.xHandle || null,
         current_bid: actualAmount,
-        logo_url: uploadedLogoUrl || existingSlot.logo_url || null
+        logo_url: userData.logo_url || existingSlot.logo_url || null
       })
       .eq('id', slotId)
       .lte('current_bid', actualAmount)
       .select();
 
     if (updateError || !updatedSlot || updatedSlot.length === 0) {
-      console.error('Atomic update failed. Race condition or error:', updateError);
-      return new Response(JSON.stringify({ error: 'Slot update failed. Someone may have placed a higher bid simultaneously.' }), { status: 409 });
+      return new Response(JSON.stringify({ error: 'Slot update failed. Someone may have placed a higher bid simultaneously.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 9. Mark Order as Verified (Commit Idempotency)
     await supabase
       .from('orders')
-      .update({ status: 'verified', user_data: JSON.stringify({ brandName, website, xHandle }) })
-      .eq('razorpay_order_id', razorpay_order_id);
+      .update({ status: 'verified' })
+      .eq('razorpay_order_id', txnid);
 
-    return new Response(JSON.stringify({ success: true, message: 'Payment verified securely!' }), { status: 200 });
+    return Response.redirect(new URL('/?payment_success=true', request.url).toString(), 302);
 
   } catch (error) {
-    console.error('Verification error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error during verification' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error during verification' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }

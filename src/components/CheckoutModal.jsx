@@ -53,19 +53,7 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
     }
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,74 +89,36 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
         throw new Error(orderData.error || 'Failed to create order');
       }
 
-      // 2. Load the Razorpay script if needed
-      const res = await loadRazorpayScript();
-      if (!res) {
-        alert('Razorpay SDK failed to load. Are you online?');
-        setIsProcessing(false);
-        return;
-      }
+      // 2. Build PayU Form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://secure.payu.in/_payment';
+      
+      const baseUrl = 'https://letbannercook.vercel.app';
 
-      // 3. Initialize Razorpay Checkout
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Public key is safe in frontend
+      const params = {
+        key: orderData.key,
+        txnid: orderData.order_id,
         amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'Let The Banner Cook',
-        description: `Slot Purchase: ${slot.id.toUpperCase()}`,
-        order_id: orderData.order_id,
-        handler: async function (response) {
-          try {
-            setIsProcessing(true);
-            
-            const verifyRes = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                slotId: slot.id
-              })
-            });
-            
-            const verifyData = await verifyRes.json();
-            
-            if (!verifyRes.ok) {
-              throw new Error(verifyData.error || 'Payment verification failed on server');
-            }
-            
-            alert('Payment verified successfully!');
-            onSubmit({
-              slotId: slot.id,
-              brandName,
-              website,
-              handle,
-              amount: finalAmount,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
-            });
-          } catch (err) {
-            console.error('Verification Error:', err);
-            alert('Verification Error: ' + err.message);
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-        prefill: {
-          name: brandName,
-        },
-        theme: {
-          color: '#000000'
-        }
+        productinfo: orderData.productinfo,
+        firstname: orderData.firstname,
+        email: orderData.email,
+        phone: '9999999999', // Required by PayU, dummy value if not collected
+        surl: `${baseUrl}/api/verify-payment`,
+        furl: `${baseUrl}/api/verify-payment`,
+        hash: orderData.hash
       };
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.on('payment.failed', function (response) {
-        alert('Payment failed: ' + response.error.description);
-      });
-      paymentObject.open();
+      for (const [k, v] of Object.entries(params)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
 
     } catch (error) {
       console.error(error);

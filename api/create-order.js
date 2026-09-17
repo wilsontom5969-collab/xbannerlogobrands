@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { webcrypto } from 'crypto';
 
 // Helper to determine image type from magic bytes
 function getMimeTypeFromBuffer(buffer) {
@@ -23,8 +24,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid slot ID or bid amount' });
     }
 
-    const keyId = env.RAZORPAY_KEY_ID;
-    const keySecret = env.RAZORPAY_KEY_SECRET;
+    const keyId = env.PAYU_MERCHANT_KEY;
+    const keySecret = env.PAYU_SALT;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -82,32 +83,24 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Create Razorpay Order
-    const auth = btoa(`${keyId}:${keySecret}`);
-    const receiptId = `slot_${slotId}_${Date.now()}`;
+    // 3. Create PayU Transaction ID and Hash
+    const txnid = 'txn_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    const productinfo = `Slot_${slotId}`;
+    const firstname = brandName || 'User';
+    const email = 'customer@letthebannercook.com'; // Replace with actual email if collected
     
-    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'Node-Fetch/1.0'
-      },
-      body: JSON.stringify({ amount: amount, currency: 'INR', receipt: receiptId })
-    });
+    // PayU Hash Formula: sha512(key|txnid|amount|productinfo|firstname|email|||||||||||SALT) (11 pipes after email)
+    const hashString = `${keyId}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
+    
+    const encoder = new TextEncoder();
+    const hashBuffer = await webcrypto.subtle.digest('SHA-512', encoder.encode(hashString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    const orderText = await razorpayResponse.text();
-    let orderData;
-    try {
-      orderData = JSON.parse(orderText);
-    } catch (e) {
-      return res.status(500).json({ error: 'Razorpay returned non-JSON' });
-    }
-
-    if (!razorpayResponse.ok) {
-      return res.status(500).json({ error: 'Failed to create Razorpay order' });
-    }
+    const orderData = {
+      id: txnid,
+      amount: amount
+    };
 
     // 4. Save order and user_data securely
     const userData = JSON.stringify({ brandName, website, xHandle, logo_url: uploadedLogoUrl });
@@ -130,7 +123,11 @@ export default async function handler(req, res) {
     return res.status(200).json({
       order_id: orderData.id,
       amount: orderData.amount,
-      currency: orderData.currency
+      hash: hash,
+      key: keyId,
+      productinfo,
+      firstname,
+      email
     });
 
   } catch (error) {

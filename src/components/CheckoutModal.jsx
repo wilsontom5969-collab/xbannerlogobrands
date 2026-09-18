@@ -1,27 +1,32 @@
 import { useState } from 'react';
 
-export default function CheckoutModal({ slot, onClose, onSubmit }) {
+export default function CheckoutModal({ slot, onClose }) {
   const [brandName, setBrandName] = useState('');
   const [website, setWebsite] = useState('');
   const [handle, setHandle] = useState('');
-  const [bidAmount, setBidAmount] = useState('');
   const [logoBase64, setLogoBase64] = useState(null);
   const [logoMime, setLogoMime] = useState(null);
-
-  let minBid = slot?.current_bid / 100;
-  if (slot?.status === 'live') {
-    if (slot.size === 'big') {
-      minBid = Math.ceil((slot.current_bid * 1.1) / 100);
-    } else if (slot.size === 'small') {
-      minBid = Math.floor(slot.current_bid / 100) + 1;
-    }
-    
-    if (minBid <= slot.current_bid / 100) {
-      minBid = Math.floor(slot.current_bid / 100) + 1;
-    }
-  }
-
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const fixedPrice = slot?.size === 'big' ? 19999 : slot?.size === 'small' ? 6999 : 2999;
+
+  // Calculate schedule
+  let startsAtStr = 'Immediately';
+  let endsAtStr = '';
+  let now = new Date();
+  
+  if (slot?.bookings && slot.bookings.length > 0) {
+    const sorted = [...slot.bookings].sort((a, b) => new Date(b.ends_at) - new Date(a.ends_at));
+    const lastEnd = new Date(sorted[0].ends_at);
+    if (lastEnd > now) {
+      startsAtStr = lastEnd.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      endsAtStr = new Date(lastEnd.getTime() + 72 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    } else {
+      endsAtStr = new Date(now.getTime() + 72 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+  } else {
+    endsAtStr = new Date(now.getTime() + 72 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -53,22 +58,12 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
     }
   };
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
-    if (['big', 'small'].includes(slot.size) && Number(bidAmount) < minBid) {
-      alert(`Bid must be at least ₹${minBid.toLocaleString()}`);
-      return;
-    }
-
     setIsProcessing(true);
-    const finalAmount = ['big', 'small'].includes(slot.size) ? Number(bidAmount) * 100 : slot.current_bid;
+    const finalAmount = fixedPrice * 100; // in paise
 
     try {
-      // 1. Call our secure serverless function to create the order
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,7 +84,6 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
         throw new Error(orderData.error || 'Failed to create order');
       }
 
-      // 2. Build PayU Form
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = 'https://secure.payu.in/_payment';
@@ -103,7 +97,7 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
         productinfo: orderData.productinfo,
         firstname: orderData.firstname,
         email: orderData.email,
-        phone: '9999999999', // Required by PayU, dummy value if not collected
+        phone: '9999999999', 
         surl: `${baseUrl}/api/verify-payment`,
         furl: `${baseUrl}/api/verify-payment`,
         hash: orderData.hash
@@ -142,13 +136,34 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
         borderRadius: '16px',
         width: '100%', maxWidth: '500px',
         padding: '2rem',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        maxHeight: '90vh', overflowY: 'auto'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
-            {slot.size === 'big' ? 'Place Bid' : 'Buy Slot'} ({slot.id.toUpperCase()})
+            Book Placement ({slot.id.toUpperCase()})
           </h2>
           <button onClick={onClose} style={{ fontSize: '1.5rem', cursor: 'pointer', border: 'none', background: 'none' }}>×</button>
+        </div>
+
+        <div style={{ background: 'var(--color-hover)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span style={{ color: '#536471' }}>Duration:</span>
+            <strong>72 HOURS</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span style={{ color: '#536471' }}>Your Placement Starts:</span>
+            <strong>{startsAtStr}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span style={{ color: '#536471' }}>Your Placement Ends:</span>
+            <strong>{endsAtStr}</strong>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0.8rem 0' }}/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
+            <strong>Fixed Price:</strong>
+            <strong>₹{fixedPrice.toLocaleString()}</strong>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -182,32 +197,16 @@ export default function CheckoutModal({ slot, onClose, onSubmit }) {
           <div className="mb-4">
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Logo Upload</label>
             <input 
-              type="file" accept="image/*"
+              type="file" accept="image/*" required
               onChange={handleFileChange}
               style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border)' }} 
             />
             <small style={{ color: '#536471' }}>Max 2MB. Square (1:1) recommended.</small>
           </div>
 
-          {['big', 'small'].includes(slot.size) ? (
-             <div className="mb-4">
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Bid Amount (₹)</label>
-              <input 
-                type="number" required min={minBid}
-                value={bidAmount} onChange={e => setBidAmount(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '2px solid var(--color-accent)' }} 
-              />
-              <small style={{ color: '#536471' }}>Minimum bid: ₹{minBid.toLocaleString()}</small>
-            </div>
-          ) : (
-            <div className="mb-4" style={{ padding: '1rem', background: 'var(--color-hover)', borderRadius: '8px' }}>
-              <strong>Total Amount: ₹{(slot.current_bid / 100).toLocaleString()}</strong>
-            </div>
-          )}
-
           <div style={{ marginTop: '2rem' }}>
             <button type="submit" className="btn btn-primary" disabled={isProcessing} style={{ width: '100%', opacity: isProcessing ? 0.7 : 1 }}>
-              {isProcessing ? 'Processing...' : 'Proceed to Payment'}
+              {isProcessing ? 'Processing...' : `Pay ₹${fixedPrice.toLocaleString()}`}
             </button>
           </div>
         </form>

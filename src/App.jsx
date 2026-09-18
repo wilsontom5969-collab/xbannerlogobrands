@@ -7,19 +7,18 @@ import TermsPolicy from './components/TermsPolicy';
 
 import { supabase } from './lib/supabaseClient';
 
-// Mock data based on schema
 const INITIAL_SLOTS = [
-  { id: 'big-1', size: 'big', current_bid: 1999900, status: 'available' },
-  { id: 'big-2', size: 'big', current_bid: 1999900, status: 'available' },
-  { id: 'big-3', size: 'big', current_bid: 2500000, status: 'live', holder_name: 'Cornerstone Media', logo_url: '/cornerstone.png', link: 'https://www.cornerstonemedia.co.in/' },
-  { id: 'small-1', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'small-2', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'small-3', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'small-4', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'small-5', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'small-6', size: 'small', current_bid: 699900, status: 'available' },
-  { id: 'micro-1', size: 'micro', current_bid: 299900, status: 'available' },
-  { id: 'micro-2', size: 'micro', current_bid: 299900, status: 'available' },
+  { id: 'big-1', size: 'big', status: 'available' },
+  { id: 'big-2', size: 'big', status: 'available' },
+  { id: 'big-3', size: 'big', status: 'available' },
+  { id: 'small-1', size: 'small', status: 'available' },
+  { id: 'small-2', size: 'small', status: 'available' },
+  { id: 'small-3', size: 'small', status: 'available' },
+  { id: 'small-4', size: 'small', status: 'available' },
+  { id: 'small-5', size: 'small', status: 'available' },
+  { id: 'small-6', size: 'small', status: 'available' },
+  { id: 'micro-1', size: 'micro', status: 'available' },
+  { id: 'micro-2', size: 'micro', status: 'available' },
 ];
 
 function App() {
@@ -68,16 +67,20 @@ function App() {
 
   return (
     <>
-      <header>
-        <div className="container">
-          <img 
-            src="/logo.png" 
-            alt="Let The Banner Cook" 
-            style={{ maxWidth: '400px', width: '100%', display: 'block', margin: '0 auto 1.5rem' }} 
-          />
-          <p className="tagline">Your logo. My banner. Let's see what happens.</p>
-          <span className="bio-line">my banner pays rent.</span>
-
+      <header style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)', marginBottom: '2rem' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+          <a href="/" style={{ display: 'block' }}>
+            <img 
+              src="/logo.png" 
+              alt="Let The Banner Cook" 
+              style={{ maxWidth: '250px', width: '100%', display: 'block' }} 
+            />
+          </a>
+          <nav className="nav-links" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+            <a href="#slots">Slots</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#about">About Founder</a>
+          </nav>
         </div>
       </header>
 
@@ -97,45 +100,51 @@ function App() {
             <BannerDisplay slots={slots} onCheckout={setCheckoutSlot} />
           </section>
 
-          <section className="mb-16">
+          <section id="slots" className="mb-16">
             <h2 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>Live Slot Status</h2>
-            <SlotTable slots={slots} onCheckout={setCheckoutSlot} />
+            <SlotTable slots={slots} onCheckout={setCheckoutSlot} onRefresh={fetchSlots} />
           </section>
 
           <section id="how-it-works" className="mb-16">
-            <h2>how it works</h2>
+            <h2>How It Works</h2>
             <div style={{ 
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
               gap: '3rem', marginTop: '3rem'
             }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>1. pick a spot</h3>
-                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>choose between micro, small (fixed price), or big (bidding war) slots.</p>
+              <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>1. Choose a Spot</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>Select between micro, small, or big slots for a fixed-price 72-hour placement.</p>
               </div>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>2. pay / bid</h3>
-                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>enter your brand info, upload a logo, and checkout. bidders only pay if they win.</p>
+              <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>2. Book Placement</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>Enter your brand info, upload a logo, and pay the fixed price. Your spot is instantly secured.</p>
               </div>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>3. go live</h3>
-                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>once approved, your logo is live on the x banner for the world to see.</p>
+              <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: 600 }}>3. Go Live</h3>
+                <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>If the slot is empty, you go live immediately. Otherwise, you're queued and go live automatically when the current placement ends.</p>
               </div>
             </div>
           </section>
 
-        <section className="mb-16">
+        <section id="about" className="mb-16">
           <h2>Where the money goes</h2>
-          <p>Great question. This funds my unemployment. Consider yourself a very small, very confused investor in my life.</p>
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)', marginTop: '3rem' }}>
+            <p>Great question. This funds my unemployment. Consider yourself a very small, very confused investor in my life.</p>
+          </div>
         </section>
 
         <section className="mb-16" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-          <img 
-            src="/founder.png" 
-            alt="Wilson" 
+          <div 
             className="founder-img"
-            style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover' }} 
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
+            style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}
+          >
+            <img 
+              src="/founder.jpeg" 
+              alt="Wilson" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.4)' }} 
+              onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+            />
+          </div>
           <div style={{ flex: '1 1 300px' }}>
             <p style={{ fontSize: '1.05rem', marginBottom: '1rem', lineHeight: '1.5' }}>
               Hey, I'm Wilson. Retired agency owner, current 3am shitposter, full-time caffeine dependent. Built stuff before. This is probably the weirdest one, which usually means it's the right one.

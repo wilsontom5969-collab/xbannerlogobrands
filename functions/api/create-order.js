@@ -32,27 +32,22 @@ export async function onRequestPost(context) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Validate Amount securely using DB current_bid
+    // 1. Calculate Fixed Price based on slot size securely
     const { data: slot, error: slotError } = await supabase.from('slots').select('*').eq('id', slotId).single();
     if (slotError || !slot) return new Response(JSON.stringify({ error: 'Slot not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
-    if (slot.status === 'live' && slot.size === 'micro') {
-       return new Response(JSON.stringify({ error: 'This fixed-price slot has already been purchased.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    let fixedPrice = 0;
+    if (slot.size === 'big') {
+      fixedPrice = 1999900; // ₹19,999
+    } else if (slot.size === 'small') {
+      fixedPrice = 699900; // ₹6,999
+    } else if (slot.size === 'micro') {
+      fixedPrice = 299900; // ₹2,999
+    } else {
+      return new Response(JSON.stringify({ error: 'Invalid slot size' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    let minRequired = slot.current_bid;
-    if (slot.status === 'live') {
-      if (slot.size === 'big') {
-        minRequired = Math.ceil(slot.current_bid * 1.10);
-      } else if (slot.size === 'small') {
-        minRequired = slot.current_bid + 100;
-      }
-      if (minRequired <= slot.current_bid) minRequired = slot.current_bid + 100;
-    }
-
-    if (amount < minRequired) {
-      return new Response(JSON.stringify({ error: `Amount too low. Minimum required is ${minRequired / 100} INR.` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
+    const finalAmount = fixedPrice;
 
     // 2. Upload Logo securely
     let uploadedLogoUrl = null;
@@ -87,7 +82,7 @@ export async function onRequestPost(context) {
     const email = 'customer@letthebannercook.com'; 
     
     // PayU Hash Formula: sha512(key|txnid|amount|productinfo|firstname|email|||||||||||SALT)
-    const hashString = `${keyId}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
+    const hashString = `${keyId}|${txnid}|${finalAmount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
     
     const encoder = new TextEncoder();
     const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
@@ -96,7 +91,7 @@ export async function onRequestPost(context) {
 
     const orderData = {
       id: txnid,
-      amount: amount
+      amount: finalAmount
     };
 
     // 4. Save order and user_data securely

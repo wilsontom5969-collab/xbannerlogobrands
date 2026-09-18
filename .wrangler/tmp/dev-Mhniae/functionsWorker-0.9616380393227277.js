@@ -21437,21 +21437,17 @@ async function onRequestPost2(context) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: slot, error: slotError } = await supabase.from("slots").select("*").eq("id", slotId).single();
     if (slotError || !slot) return new Response(JSON.stringify({ error: "Slot not found" }), { status: 404, headers: { "Content-Type": "application/json" } });
-    if (slot.status === "live" && slot.size === "micro") {
-      return new Response(JSON.stringify({ error: "This fixed-price slot has already been purchased." }), { status: 400, headers: { "Content-Type": "application/json" } });
+    let fixedPrice = 0;
+    if (slot.size === "big") {
+      fixedPrice = 1999900;
+    } else if (slot.size === "small") {
+      fixedPrice = 699900;
+    } else if (slot.size === "micro") {
+      fixedPrice = 299900;
+    } else {
+      return new Response(JSON.stringify({ error: "Invalid slot size" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
-    let minRequired = slot.current_bid;
-    if (slot.status === "live") {
-      if (slot.size === "big") {
-        minRequired = Math.ceil(slot.current_bid * 1.1);
-      } else if (slot.size === "small") {
-        minRequired = slot.current_bid + 100;
-      }
-      if (minRequired <= slot.current_bid) minRequired = slot.current_bid + 100;
-    }
-    if (amount < minRequired) {
-      return new Response(JSON.stringify({ error: `Amount too low. Minimum required is ${minRequired / 100} INR.` }), { status: 400, headers: { "Content-Type": "application/json" } });
-    }
+    const finalAmount = fixedPrice;
     let uploadedLogoUrl = null;
     if (logoBase64) {
       try {
@@ -21473,14 +21469,14 @@ async function onRequestPost2(context) {
     const productinfo = `Slot_${slotId}`;
     const firstname = brandName || "User";
     const email = "customer@letthebannercook.com";
-    const hashString = `${keyId}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
+    const hashString = `${keyId}|${txnid}|${finalAmount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
     const encoder = new TextEncoder();
     const hashBuffer = await crypto.subtle.digest("SHA-512", encoder.encode(hashString));
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     const orderData = {
       id: txnid,
-      amount
+      amount: finalAmount
     };
     const userData = JSON.stringify({ brandName, website, xHandle, logo_url: uploadedLogoUrl });
     const { error: insertError } = await supabase.from("orders").insert({
@@ -21590,39 +21586,28 @@ async function onRequestPost3(context) {
     if (fetchError || !existingSlot) {
       return new Response(JSON.stringify({ error: "Slot not found." }), { status: 404, headers: { "Content-Type": "application/json" } });
     }
-    if (existingSlot.status === "live" && existingSlot.size === "micro") {
-      return new Response(JSON.stringify({ error: "This fixed-price slot has already been purchased." }), { status: 400, headers: { "Content-Type": "application/json" } });
-    }
-    if (existingSlot.status === "live") {
-      let minOutbid = existingSlot.current_bid;
-      if (existingSlot.size === "big") {
-        minOutbid = Math.ceil(existingSlot.current_bid * 1.1);
-      } else if (existingSlot.size === "small") {
-        minOutbid = existingSlot.current_bid + 100;
-      }
-      if (minOutbid <= existingSlot.current_bid) {
-        minOutbid = existingSlot.current_bid + 100;
-      }
-      if (actualAmount < minOutbid) {
-        return new Response(JSON.stringify({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
-    } else {
-      if (actualAmount < existingSlot.current_bid) {
-        return new Response(JSON.stringify({ error: "Bid amount is below the starting price." }), { status: 400, headers: { "Content-Type": "application/json" } });
-      }
-    }
     const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
-    const { data: updatedSlot, error: updateError } = await supabase.from("slots").update({
-      status: "live",
-      holder_name: userData.brandName,
-      website_url: userData.website,
-      x_handle: userData.xHandle || null,
-      current_bid: actualAmount,
-      logo_url: userData.logo_url || existingSlot.logo_url || null
-    }).eq("id", slotId).lte("current_bid", actualAmount).select();
-    if (updateError || !updatedSlot || updatedSlot.length === 0) {
-      return new Response(JSON.stringify({ error: "Slot update failed. Someone may have placed a higher bid simultaneously." }), { status: 409, headers: { "Content-Type": "application/json" } });
+    const { data: bookingResult, error: bookingError } = await supabase.rpc("book_slot", {
+      p_booking_id: crypto.randomUUID(),
+      p_slot_id: slotId,
+      p_order_id: txnid,
+      p_holder_name: userData.brandName || "User",
+      p_logo_url: userData.logo_url || existingSlot.logo_url || null,
+      p_website_url: userData.website || null,
+      p_x_handle: userData.xHandle || null,
+      p_amount_paid: actualAmount
+    });
+    if (bookingError) {
+      console.error("Booking error:", bookingError);
+      return new Response(JSON.stringify({ error: "Failed to book the slot. Please contact support." }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
+    await supabase.from("slots").update({
+      status: "live",
+      holder_name: userData.brandName || "User",
+      website_url: userData.website || null,
+      x_handle: userData.xHandle || null,
+      logo_url: userData.logo_url || existingSlot.logo_url || null
+    }).eq("id", slotId);
     await supabase.from("orders").update({ status: "verified" }).eq("razorpay_order_id", txnid);
     return Response.redirect(new URL("/?payment_success=true", request.url).toString(), 302);
   } catch (error) {
@@ -21715,11 +21700,20 @@ async function onRequest(context) {
   }
   const supabase = createClient(supabaseUrl, supabaseKey);
   try {
-    const { data, error } = await supabase.from("slots").select("*");
-    if (error) {
-      throw error;
-    }
-    return new Response(JSON.stringify({ data }), {
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await supabase.from("slot_bookings").update({ status: "completed" }).in("status", ["active", "scheduled"]).lt("ends_at", now);
+    const { data: slots, error: slotsError } = await supabase.from("slots").select("*");
+    if (slotsError) throw slotsError;
+    const { data: bookings, error: bookingsError } = await supabase.from("slot_bookings").select("*").in("status", ["active", "scheduled"]).order("starts_at", { ascending: true });
+    if (bookingsError) throw bookingsError;
+    const slotsWithBookings = slots.map((slot) => {
+      const slotBookings = bookings.filter((b) => b.slot_id === slot.id);
+      return {
+        ...slot,
+        bookings: slotBookings
+      };
+    });
+    return new Response(JSON.stringify({ data: slotsWithBookings }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });

@@ -100,7 +100,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                     fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
                     fontWeight: 600
                   }}>
-                    ₹{(slotData.current_bid / 100).toLocaleString()}
+                    ₹{(layout.type === 'big' ? 19999 : layout.type === 'small' ? 6999 : 2999).toLocaleString()}
                   </div>
                 </div>
               ) : (
@@ -110,7 +110,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   color: 'rgba(0,0,0,0.7)',
                   fontWeight: 600
                 }}>
-                  ₹{(slotData.current_bid / 100).toLocaleString()}
+                  ₹{(layout.type === 'big' ? 19999 : layout.type === 'small' ? 6999 : 2999).toLocaleString()}
                 </div>
               )}
             </div>
@@ -143,7 +143,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   }}
                   onClick={(e) => { e.stopPropagation(); onCheckout(slotData); }}
                 >
-                  {isAvailable ? 'Buy' : 'Outbid'}
+                  {isAvailable ? 'Buy' : 'Queue'}
                 </button>
                 
                 {!isAvailable && (

@@ -17,9 +17,9 @@ const TermsPolicy = ({ onBack }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>1. Slot Purchases & Bidding</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>1. Slot Purchases & Scheduling</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
-            All slot purchases and bids are final. When you purchase a fixed-price slot, it is immediately reserved for you pending content approval. For bidding slots, you will only be charged if your bid is successful and you remain the highest bidder when the slot is finalized.
+            All slot purchases are final. When you purchase a fixed-price slot, you are purchasing a 72-hour placement. If the slot is currently occupied, your placement will be automatically scheduled to begin immediately after the existing placements end.
           </p>
         </section>
 

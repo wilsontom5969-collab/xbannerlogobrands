@@ -81,51 +81,33 @@ export default async function handler(req, res) {
     }
 
 
-    
-    if (existingSlot.status === 'live' && existingSlot.size === 'micro') {
-       return res.status(400).json({ error: 'This fixed-price slot has already been purchased.' });
-    }
-
-    if (existingSlot.status === 'live') {
-       let minOutbid = existingSlot.current_bid;
-       if (existingSlot.size === 'big') {
-         minOutbid = Math.ceil(existingSlot.current_bid * 1.10);
-       } else if (existingSlot.size === 'small') {
-         minOutbid = existingSlot.current_bid + 100;
-       }
-       
-       if (minOutbid <= existingSlot.current_bid) {
-         minOutbid = existingSlot.current_bid + 100;
-       }
-
-       if (actualAmount < minOutbid) {
-         return res.status(400).json({ error: `Bid too low. Minimum required is ${minOutbid / 100} INR.` });
-       }
-    } else {
-       if (actualAmount < existingSlot.current_bid) {
-         return res.status(400).json({ error: 'Bid amount is below the starting price.' });
-       }
-    }
-
     const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     
-    const { data: updatedSlot, error: updateError } = await supabase
-      .from('slots')
-      .update({
-        status: 'live',
-        holder_name: userData.brandName,
-        website_url: userData.website,
-        x_handle: userData.xHandle || null,
-        current_bid: actualAmount,
-        logo_url: userData.logo_url || existingSlot.logo_url || null
-      })
-      .eq('id', slotId)
-      .lte('current_bid', actualAmount)
-      .select();
+    // Call the PostgreSQL function to safely book the slot in the queue
+    const { data: bookingResult, error: bookingError } = await supabase.rpc('book_slot', {
+      p_booking_id: crypto.randomUUID(),
+      p_slot_id: slotId,
+      p_order_id: txnid,
+      p_holder_name: userData.brandName || 'User',
+      p_logo_url: userData.logo_url || existingSlot.logo_url || null,
+      p_website_url: userData.website || null,
+      p_x_handle: userData.xHandle || null,
+      p_amount_paid: actualAmount
+    });
 
-    if (updateError || !updatedSlot || updatedSlot.length === 0) {
-      return res.status(409).json({ error: 'Slot update failed. Someone may have placed a higher bid simultaneously.' });
+    if (bookingError) {
+      console.error('Booking error:', bookingError);
+      return res.status(500).json({ error: 'Failed to book the slot. Please contact support.' });
     }
+
+    // Also update the slot status to live (for backward compatibility if needed)
+    await supabase.from('slots').update({
+      status: 'live',
+      holder_name: userData.brandName || 'User',
+      website_url: userData.website || null,
+      x_handle: userData.xHandle || null,
+      logo_url: userData.logo_url || existingSlot.logo_url || null
+    }).eq('id', slotId);
 
     await supabase
       .from('orders')

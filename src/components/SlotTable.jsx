@@ -1,77 +1,164 @@
-export default function SlotTable({ slots, onCheckout }) {
+import { useState, useEffect } from 'react';
+
+export default function SlotTable({ slots, onCheckout, onRefresh }) {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const currentTime = new Date();
+      setNow(currentTime);
+      
+      // Trigger refresh if any active slot just ended, or if any scheduled slot just started
+      let shouldRefresh = false;
+      for (const slot of slots) {
+        if (slot.bookings) {
+          for (const b of slot.bookings) {
+            if (b.status === 'active') {
+              if (new Date(b.ends_at) <= currentTime) shouldRefresh = true;
+            } else if (b.status === 'scheduled') {
+              if (new Date(b.starts_at) <= currentTime) shouldRefresh = true;
+            }
+          }
+        }
+      }
+      if (shouldRefresh && onRefresh) onRefresh();
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [slots, onRefresh]);
+
+  const formatCountdown = (targetDate) => {
+    const diff = targetDate.getTime() - now.getTime();
+    if (diff <= 0) return '00d 00h 00m 00s';
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const m = Math.floor((diff / 1000 / 60) % 60);
+    const s = Math.floor((diff / 1000) % 60);
+    return `${d}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    });
+  };
+
+  const getSlotPrice = (size) => {
+    if (size === 'big') return 19999;
+    if (size === 'small') return 6999;
+    return 2999;
+  };
+
   return (
-    <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead style={{ backgroundColor: 'var(--color-hover)', borderBottom: '2px solid var(--color-border)' }}>
-          <tr>
-            <th style={{ padding: '1rem', fontWeight: 600 }}>Spot</th>
-            <th style={{ padding: '1rem', fontWeight: 600 }}>Status / Holder</th>
-            <th style={{ padding: '1rem', fontWeight: 600 }}>Price / Current Bid</th>
-            <th style={{ padding: '1rem', fontWeight: 600, textAlign: 'right' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...slots].sort((a, b) => b.current_bid - a.current_bid).map(slot => {
-            const isAvailable = slot.status === 'available';
-            const priceStr = `₹${(slot.current_bid / 100).toLocaleString()}`;
-            
-            return (
-              <tr key={slot.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '1rem' }}>
-                  <div style={{ fontWeight: 600 }}>{slot.id.toUpperCase()}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#536471' }}>{slot.size.toUpperCase()}</div>
-                </td>
-                <td style={{ padding: '1rem' }}>
-                  {isAvailable ? (
-                    <span style={{ color: '#00ba7c', fontWeight: 500 }}>Available</span>
-                  ) : (
-                    <span style={{ fontWeight: 500 }}>{slot.holder_name}</span>
-                  )}
-                </td>
-                <td style={{ padding: '1rem', fontWeight: 600 }}>
-                  {priceStr}
-                </td>
-                <td style={{ padding: '1rem', textAlign: 'right' }}>
-                  {!isAvailable ? (
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button 
-                        className="btn btn-outline"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                        onClick={() => {
-                          const targetUrl = slot.website_url || slot.link;
-                          if (targetUrl) {
-                            const finalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
-                            window.open(finalUrl, '_blank', 'noopener,noreferrer');
-                          } else {
-                            alert(`Visiting ${slot.holder_name}'s website...`);
-                          }
-                        }}
-                      >
-                        Visit ↗
-                      </button>
-                      <button 
-                        className="btn btn-accent" 
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                        onClick={() => onCheckout(slot)}
-                      >
-                        Outbid
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      className={slot.size === 'big' ? "btn btn-accent" : "btn btn-primary"}
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                      onClick={() => onCheckout(slot)}
-                    >
-                      {slot.size === 'big' ? 'Start Bidding' : 'Buy Now'}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {[...slots].sort((a, b) => getSlotPrice(b.size) - getSlotPrice(a.size)).map(slot => {
+        const fixedPrice = getSlotPrice(slot.size);
+        const priceStr = `₹${fixedPrice.toLocaleString()}`;
+        
+        const activeBooking = (slot.bookings || []).find(b => b.status === 'active');
+        const scheduledBookings = (slot.bookings || [])
+          .filter(b => b.status === 'scheduled')
+          .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+        const nextBooking = scheduledBookings[0];
+        const numFutureBookings = scheduledBookings.length;
+
+        const isAvailableNow = !activeBooking && !nextBooking;
+        const startsImmediately = !activeBooking;
+
+        return (
+          <div key={slot.id} style={{ 
+            background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)', 
+            padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' 
+          }}>
+            <div style={{ flex: '1 1 200px' }}>
+              <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.5rem' }}>{slot.id.toUpperCase()}</div>
+              
+              {activeBooking && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                   {activeBooking.logo_url && (
+                      <img src={activeBooking.logo_url} alt={activeBooking.holder_name} style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px' }} />
+                   )}
+                   <div style={{ fontWeight: 600 }}>{activeBooking.holder_name}</div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ flex: '2 1 300px', fontSize: '0.9rem' }}>
+              {isAvailableNow ? (
+                <div>
+                  <div style={{ color: '#00ba7c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Available Now</div>
+                  <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>Immediately</strong></div>
+                </div>
+              ) : activeBooking ? (
+                <div>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>CURRENTLY SHOWING</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{activeBooking.holder_name}</div>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>TIME LEFT</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatCountdown(new Date(activeBooking.ends_at))}
+                  </div>
+                  <div style={{ color: '#536471' }}>ENDS <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>NEXT UP</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>STARTS IN</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatCountdown(new Date(nextBooking.starts_at))}
+                  </div>
+                  <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
+                </div>
+              )}
+
+              {activeBooking && nextBooking && (
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--color-border)' }}>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>NEXT UP</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
+                </div>
+              )}
+
+              {numFutureBookings > 0 && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#536471' }}>
+                  {numFutureBookings} upcoming placement{numFutureBookings !== 1 ? 's' : ''} scheduled
+                </div>
+              )}
+            </div>
+
+            <div style={{ flex: '1 1 200px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: '#536471', fontWeight: 600 }}>3-DAY PLACEMENT</div>
+                <div style={{ fontWeight: 700, fontSize: '1.3rem' }}>{priceStr}</div>
+              </div>
+              <button 
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+                onClick={() => onCheckout(slot)}
+              >
+                {startsImmediately ? 'Book Now' : 'Join Queue'}
+              </button>
+              {activeBooking && (
+                <button 
+                  className="btn btn-outline"
+                  style={{ width: '100%' }}
+                  onClick={() => {
+                    const targetUrl = activeBooking.website_url;
+                    if (targetUrl) {
+                      const finalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
+                      window.open(finalUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                      alert(`Visiting ${activeBooking.holder_name}'s website...`);
+                    }
+                  }}
+                >
+                  Visit Active Site ↗
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

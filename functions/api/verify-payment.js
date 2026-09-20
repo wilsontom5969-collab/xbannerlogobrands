@@ -4,40 +4,43 @@ export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     
-    // Parse form-urlencoded body
-    const formData = await request.formData();
-    const txnid = formData.get('txnid');
-    const status = formData.get('status');
-    const hash = formData.get('hash');
-    const amount = formData.get('amount');
-    const mihpayid = formData.get('mihpayid');
-    const email = formData.get('email') || '';
-    const firstname = formData.get('firstname') || '';
-    const productinfo = formData.get('productinfo') || '';
-    const key = formData.get('key');
+    // Parse JSON body
+    const body = await request.json();
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = body;
 
-    if (!txnid || !status || !hash || !amount) {
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
       return new Response(JSON.stringify({ error: 'Missing payment details' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const salt = env.PAYU_SALT;
-    const keyId = env.PAYU_MERCHANT_KEY;
+    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+    if (!razorpayKeySecret || !supabaseUrl || !supabaseServiceKey) {
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Reverse hash formula: SALT|status|||||||||||email|firstname|productinfo|amount|txnid|key
-    const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
-    
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Verify Razorpay Signature
+    // HMAC SHA-256 of "razorpay_order_id|razorpay_payment_id" using RAZORPAY_KEY_SECRET
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(razorpayKeySecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify', 'sign']
+    );
 
-    if (expectedSignature !== hash) {
+    const dataToSign = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      cryptoKey,
+      new TextEncoder().encode(dataToSign)
+    );
+    
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (expectedSignature !== razorpay_signature) {
       return new Response(JSON.stringify({ error: 'Invalid payment signature. Payment rejected.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -46,7 +49,7 @@ export async function onRequestPost(context) {
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('razorpay_order_id', txnid)
+      .eq('razorpay_order_id', razorpay_order_id)
       .single();
 
     if (orderFetchError || !dbOrder) {
@@ -54,14 +57,10 @@ export async function onRequestPost(context) {
     }
 
     if (dbOrder.status === 'verified') {
-      return Response.redirect(new URL('/?payment_success=true', request.url).toString(), 302);
+      return new Response(JSON.stringify({ success: true, message: 'Already verified' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (status !== 'success') {
-      return Response.redirect(new URL('/?payment_failed=true', request.url).toString(), 302);
-    }
-
-    const actualAmount = parseFloat(amount);
+    const actualAmount = dbOrder.amount;
     const slotId = dbOrder.slot_id;
 
     const { data: existingSlot, error: fetchError } = await supabase
@@ -80,7 +79,7 @@ export async function onRequestPost(context) {
     const { data: bookingResult, error: bookingError } = await supabase.rpc('book_slot', {
       p_booking_id: crypto.randomUUID(),
       p_slot_id: slotId,
-      p_order_id: txnid,
+      p_order_id: razorpay_order_id,
       p_holder_name: userData.brandName || 'User',
       p_logo_url: userData.logo_url || existingSlot.logo_url || null,
       p_website_url: userData.website || null,
@@ -105,9 +104,9 @@ export async function onRequestPost(context) {
     await supabase
       .from('orders')
       .update({ status: 'verified' })
-      .eq('razorpay_order_id', txnid);
+      .eq('razorpay_order_id', razorpay_order_id);
 
-    return Response.redirect(new URL('/?payment_success=true', request.url).toString(), 302);
+    return new Response(JSON.stringify({ success: true, message: 'Payment verified successfully.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Internal server error during verification' }), { status: 500, headers: { 'Content-Type': 'application/json' } });

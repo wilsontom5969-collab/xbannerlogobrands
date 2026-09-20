@@ -1,5 +1,18 @@
 import { useState } from 'react';
 
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      return resolve(true);
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CheckoutModal({ slot, onClose }) {
   const [brandName, setBrandName] = useState('');
   const [website, setWebsite] = useState('');
@@ -84,35 +97,57 @@ export default function CheckoutModal({ slot, onClose }) {
         throw new Error(orderData.error || 'Failed to create order');
       }
 
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://secure.payu.in/_payment';
-      
-      const baseUrl = 'https://letbannercook.vercel.app';
-
-      const params = {
-        key: orderData.key,
-        txnid: orderData.order_id,
-        amount: orderData.amount,
-        productinfo: orderData.productinfo,
-        firstname: orderData.firstname,
-        email: orderData.email,
-        phone: '9999999999', 
-        surl: `${baseUrl}/api/verify-payment`,
-        furl: `${baseUrl}/api/verify-payment`,
-        hash: orderData.hash
-      };
-
-      for (const [k, v] of Object.entries(params)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = k;
-        input.value = v;
-        form.appendChild(input);
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded) {
+        throw new Error('Razorpay SDK failed to load. Please check your connection.');
       }
 
-      document.body.appendChild(form);
-      form.submit();
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: 'INR',
+        name: 'Let The Banner Cook',
+        description: `Booking for ${slot.id.toUpperCase()}`,
+        order_id: orderData.order_id,
+        handler: async function (response) {
+          try {
+            // Post the payment signature to verify-payment endpoint
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            if (!verifyRes.ok) {
+              const errData = await verifyRes.json();
+              throw new Error(errData.error || 'Payment verification failed');
+            }
+
+            window.location.href = '/?payment_success=true';
+          } catch (err) {
+            console.error(err);
+            alert('Verification Error: ' + err.message);
+            window.location.href = '/?payment_failed=true';
+          }
+        },
+        prefill: {
+          name: brandName || 'User',
+          email: 'customer@letthebannercook.com',
+        },
+        theme: {
+          color: '#1DA1F2'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert('Payment failed: ' + response.error.description);
+      });
+      rzp.open();
 
     } catch (error) {
       console.error(error);

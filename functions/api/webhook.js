@@ -3,51 +3,56 @@ import { createClient } from '@supabase/supabase-js';
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    
-    const formData = await request.formData();
-    const txnid = formData.get('txnid');
-    const status = formData.get('status');
-    const hash = formData.get('hash');
-    const amount = formData.get('amount');
-    const mihpayid = formData.get('mihpayid');
-    const email = formData.get('email') || '';
-    const firstname = formData.get('firstname') || '';
-    const productinfo = formData.get('productinfo') || '';
+    const bodyText = await request.text();
+    const signature = request.headers.get('x-razorpay-signature');
 
-    if (!txnid || !status || !hash || !amount) {
-      return new Response(JSON.stringify({ error: 'Missing payment details in webhook' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!signature) {
+      return new Response(JSON.stringify({ error: 'Missing Razorpay signature' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const salt = env.PAYU_SALT;
-    const keyId = env.PAYU_MERCHANT_KEY;
+    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+    if (!razorpayKeySecret || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing webhook configuration in environment variables.');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Verify Signature
-    // Reverse hash formula: SALT|status|||||||||||email|firstname|productinfo|amount|txnid|key
-    const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
-    
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Verify Signature using HMAC SHA-256
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(razorpayKeySecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify', 'sign']
+    );
 
-    if (expectedSignature !== hash) {
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      cryptoKey,
+      new TextEncoder().encode(bodyText)
+    );
+    
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (expectedSignature !== signature) {
       return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (status !== 'success') {
-      return new Response(JSON.stringify({ success: true, message: 'Payment not successful, ignored' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const payload = JSON.parse(bodyText);
+
+    if (payload.event !== 'payment.captured' && payload.event !== 'order.paid') {
+      return new Response(JSON.stringify({ success: true, message: 'Event ignored' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
+
+    // Extract order ID
+    const paymentEntity = payload.payload.payment.entity;
+    const txnid = paymentEntity.order_id;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check current order status
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('id, status, slot_id, user_data, amount')
@@ -64,9 +69,7 @@ export async function onRequestPost(context) {
 
     const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     const slotId = dbOrder.slot_id;
-    const actualAmount = dbOrder.amount;
 
-    // 1. Get current slot data
     const { data: existingSlot } = await supabase
       .from('slots')
       .select('*')
@@ -77,35 +80,25 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: 'Slot not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 2. Perform secure atomic slot update
-    const { data: updatedSlot, error: slotUpdateError } = await supabase
-      .from('slots')
-      .update({
-        status: 'live',
-        holder_name: userData.brandName,
-        website_url: userData.website,
-        x_handle: userData.xHandle || null,
-        current_bid: actualAmount,
-        logo_url: userData.logo_url || existingSlot.logo_url || null
-      })
-      .eq('id', slotId)
-      .lte('current_bid', actualAmount)
-      .select();
+    // Call book_slot to add to queue safely
+    const { error: bookingError } = await supabase.rpc('book_slot', {
+      p_booking_id: crypto.randomUUID(),
+      p_slot_id: slotId,
+      p_order_id: txnid,
+      p_holder_name: userData.brandName || 'User',
+      p_logo_url: userData.logo_url || existingSlot.logo_url || null,
+      p_website_url: userData.website || null,
+      p_x_handle: userData.xHandle || null,
+      p_amount_paid: dbOrder.amount
+    });
 
-    if (slotUpdateError || !updatedSlot || updatedSlot.length === 0) {
-      console.error('Webhook: Slot update failed (possibly outbid concurrently)');
+    if (bookingError) {
+      console.error('Webhook: Booking error:', bookingError);
+      return new Response(JSON.stringify({ error: 'Failed to book the slot.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 3. Update the order status to webhook_paid and log event ID
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({ status: 'webhook_paid', webhook_event_id: mihpayid })
-      .eq('razorpay_order_id', txnid);
-
-    if (updateError) {
-      console.error('Webhook: Failed to update order status:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to update order status' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
+    // Mark as webhook_paid
+    await supabase.from('orders').update({ status: 'webhook_paid' }).eq('razorpay_order_id', txnid);
 
     return new Response(JSON.stringify({ success: true, message: 'Webhook processed successfully' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 

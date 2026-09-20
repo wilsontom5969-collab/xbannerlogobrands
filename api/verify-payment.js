@@ -8,42 +8,43 @@ export default async function handler(req, res) {
 
   try {
     const env = process.env;
-    const body = req.body;
     
-    const {
-      txnid,
-      status,
-      hash,
-      amount,
-      mihpayid,
-      email = '',
-      firstname = '',
-      productinfo = '',
-      key
-    } = body;
+    // Parse JSON body
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 
-    if (!txnid || !status || !hash || !amount) {
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
       return res.status(400).json({ error: 'Missing payment details' });
     }
 
-    const salt = env.PAYU_SALT;
-    const keyId = env.PAYU_MERCHANT_KEY;
+    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!salt || !keyId || !supabaseUrl || !supabaseServiceKey) {
+    if (!razorpayKeySecret || !supabaseUrl || !supabaseServiceKey) {
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    // Reverse hash formula: SALT|status|||||||||||email|firstname|productinfo|amount|txnid|key
-    const hashString = `${salt}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${keyId}`;
-    
-    const encoder = new TextEncoder();
-    const hashBuffer = await webcrypto.subtle.digest('SHA-512', encoder.encode(hashString));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const expectedSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Verify Razorpay Signature
+    // HMAC SHA-256 of "razorpay_order_id|razorpay_payment_id" using RAZORPAY_KEY_SECRET
+    const cryptoKey = await webcrypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(razorpayKeySecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify', 'sign']
+    );
 
-    if (expectedSignature !== hash) {
+    const dataToSign = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const signatureBuffer = await webcrypto.subtle.sign(
+      'HMAC',
+      cryptoKey,
+      new TextEncoder().encode(dataToSign)
+    );
+    
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (expectedSignature !== razorpay_signature) {
       return res.status(400).json({ error: 'Invalid payment signature. Payment rejected.' });
     }
 
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
     const { data: dbOrder, error: orderFetchError } = await supabase
       .from('orders')
       .select('*')
-      .eq('razorpay_order_id', txnid)
+      .eq('razorpay_order_id', razorpay_order_id)
       .single();
 
     if (orderFetchError || !dbOrder) {
@@ -60,14 +61,10 @@ export default async function handler(req, res) {
     }
 
     if (dbOrder.status === 'verified') {
-      return res.redirect(302, '/?payment_success=true');
+      return res.status(200).json({ success: true, message: 'Already verified' });
     }
 
-    if (status !== 'success') {
-      return res.redirect(302, '/?payment_failed=true');
-    }
-
-    const actualAmount = parseFloat(amount);
+    const actualAmount = dbOrder.amount;
     const slotId = dbOrder.slot_id;
 
     const { data: existingSlot, error: fetchError } = await supabase
@@ -80,14 +77,13 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Slot not found.' });
     }
 
-
     const userData = dbOrder.user_data ? JSON.parse(dbOrder.user_data) : {};
     
     // Call the PostgreSQL function to safely book the slot in the queue
     const { data: bookingResult, error: bookingError } = await supabase.rpc('book_slot', {
       p_booking_id: crypto.randomUUID(),
       p_slot_id: slotId,
-      p_order_id: txnid,
+      p_order_id: razorpay_order_id,
       p_holder_name: userData.brandName || 'User',
       p_logo_url: userData.logo_url || existingSlot.logo_url || null,
       p_website_url: userData.website || null,
@@ -112,11 +108,12 @@ export default async function handler(req, res) {
     await supabase
       .from('orders')
       .update({ status: 'verified' })
-      .eq('razorpay_order_id', txnid);
+      .eq('razorpay_order_id', razorpay_order_id);
 
-    return res.redirect(302, '/?payment_success=true');
+    return res.status(200).json({ success: true, message: 'Payment verified successfully.' });
 
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: 'Internal server error during verification' });
   }
 }

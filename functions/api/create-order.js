@@ -17,17 +17,15 @@ export async function onRequestPost(context) {
     const { slotId, amount, brandName, website, xHandle, logoBase64 } = body;
 
     if (!slotId || !amount || typeof amount !== 'number' || amount <= 0) {
-      return new Response(JSON.stringify({ error: 'Invalid slot ID or bid amount' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Invalid slot ID or payment amount' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const keyId = env.PAYU_MERCHANT_KEY;
-    const keySecret = env.PAYU_SALT;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!keyId || !keySecret || !supabaseUrl || !supabaseServiceKey) {
-      console.error('Payment gateway configuration error');
-      return new Response(JSON.stringify({ error: 'Payment gateway configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Database configuration error');
+      return new Response(JSON.stringify({ error: 'Database configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -75,22 +73,39 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 3. Create PayU Transaction ID and Hash
-    const txnid = 'txn_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-    const productinfo = `Slot_${slotId}`;
-    const firstname = brandName || 'User';
-    const email = 'customer@letthebannercook.com'; 
-    
-    // PayU Hash Formula: sha512(key|txnid|amount|productinfo|firstname|email|||||||||||SALT)
-    const hashString = `${keyId}|${txnid}|${finalAmount}|${productinfo}|${firstname}|${email}|||||||||||${keySecret}`;
-    
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashString));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // 3. Create Razorpay Order
+    const razorpayKeyId = env.RAZORPAY_KEY_ID;
+    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return new Response(JSON.stringify({ error: 'Razorpay keys not configured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const auth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
+    const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${auth}`
+      },
+      body: JSON.stringify({
+        amount: finalAmount, // in paise
+        currency: 'INR',
+        receipt: `receipt_${slotId}_${Date.now()}`
+      })
+    });
+
+    const rzpData = await rzpResponse.json();
+    if (!rzpResponse.ok) {
+      console.error('Razorpay Order Error:', rzpData);
+      return new Response(JSON.stringify({ error: 'Failed to create payment order' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const txnid = rzpData.id;
 
     const orderData = {
-      id: txnid,
+      order_id: txnid,
+      key: razorpayKeyId,
       amount: finalAmount
     };
 

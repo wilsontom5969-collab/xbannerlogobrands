@@ -8,20 +8,8 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
       const currentTime = new Date();
       setNow(currentTime);
       
-      // Trigger refresh if any active slot just ended, or if any scheduled slot just started
-      let shouldRefresh = false;
-      for (const slot of slots) {
-        if (slot.bookings) {
-          for (const b of slot.bookings) {
-            if (b.status === 'active') {
-              if (new Date(b.ends_at) <= currentTime) shouldRefresh = true;
-            } else if (b.status === 'scheduled') {
-              if (new Date(b.starts_at) <= currentTime) shouldRefresh = true;
-            }
-          }
-        }
-      }
-      if (shouldRefresh && onRefresh) onRefresh();
+      // Removed the stale DB status trigger check to prevent infinite onRefresh loops.
+      // The UI now dynamically transitions states using `now`.
     }, 1000);
     return () => clearInterval(timer);
   }, [slots, onRefresh]);
@@ -60,10 +48,24 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
         const fixedPrice = getSlotPrice(slot.size);
         const priceStr = `₹${fixedPrice.toLocaleString()}`;
         
-        const activeBooking = (slot.bookings || []).find(b => b.status === 'active');
-        const scheduledBookings = (slot.bookings || [])
-          .filter(b => b.status === 'scheduled')
-          .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+        let activeBooking = null;
+        let scheduledBookings = [];
+        
+        (slot.bookings || []).forEach(b => {
+          if (b.status === 'cancelled') return;
+          const start = new Date(b.starts_at);
+          const end = new Date(b.ends_at);
+          
+          if (now >= start && now < end) {
+            if (!activeBooking || new Date(activeBooking.ends_at) < end) {
+              activeBooking = b;
+            }
+          } else if (now < start) {
+            scheduledBookings.push(b);
+          }
+        });
+
+        scheduledBookings.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
         const nextBooking = scheduledBookings[0];
         const numFutureBookings = scheduledBookings.length;
 

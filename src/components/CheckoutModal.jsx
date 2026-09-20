@@ -184,7 +184,7 @@ export default function CheckoutModal({ slot, onClose }) {
         <div style={{ background: 'var(--color-hover)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontFamily: 'var(--font-family)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ color: '#536471' }}>Duration:</span>
-            <span style={{ fontWeight: 500, color: '#1a1a1a' }}>72 HOURS</span>
+            <span style={{ fontWeight: 500, color: '#1a1a1a' }}>72 Hours</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ color: '#536471' }}>Your Placement Starts:</span>

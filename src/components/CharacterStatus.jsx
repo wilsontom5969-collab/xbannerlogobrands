@@ -2,11 +2,11 @@ import React from 'react';
 
 export const getCharacterLevel = (percentage) => {
   if (percentage === 0) return { name: "Wilson is Weak", copy: "Currently accepting character development." };
-  if (percentage <= 20) return { name: "SLIGHTLY LESS BROKE WILSON", copy: "Someone believed in the plot." };
-  if (percentage <= 40) return { name: "GETTING SOMEWHERE WILSON", copy: "Character development is underway." };
-  if (percentage <= 60) return { name: "MAIN CHARACTER WILSON", copy: "Halfway through the character arc." };
-  if (percentage <= 80) return { name: "SUSPICIOUSLY SUCCESSFUL WILSON", copy: "This is getting out of hand." };
-  return { name: "FINAL BOSS WILSON", copy: "One sponsor away from full character development." };
+  if (percentage <= 20) return { name: "Slightly Less Broke Wilson", copy: "Someone believed in the plot." };
+  if (percentage <= 40) return { name: "Getting Somewhere Wilson", copy: "Character development is underway." };
+  if (percentage <= 60) return { name: "Main Character Wilson", copy: "Halfway through the character arc." };
+  if (percentage <= 80) return { name: "Suspiciously Successful Wilson", copy: "This is getting out of hand." };
+  return { name: "Final Boss Wilson", copy: "One sponsor away from full character development." };
 };
 
 export default function CharacterStatus({ occupiedCount }) {
@@ -43,7 +43,7 @@ export default function CharacterStatus({ occupiedCount }) {
           <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#536471', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
             Wilson's Character Development
           </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.3rem' }}>
+          <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-family)', fontWeight: 500, marginBottom: '0.3rem' }}>
             {level.name}
           </div>
           <div style={{ fontSize: '1rem', color: '#536471', marginBottom: '1rem' }}>

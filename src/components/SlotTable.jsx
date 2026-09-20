@@ -164,27 +164,29 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 <div style={{ fontSize: '0.75rem', color: '#536471', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>3-Day Placement</div>
                 <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{priceStr}</div>
               </div>
-              <button 
-                className="btn btn-primary"
-                style={{ width: '100%' }}
-                onClick={() => onCheckout(slot)}
-              >
-                {startsImmediately ? 'Book Now' : 'Join Queue'}
-              </button>
-              {activeBooking && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <button 
-                  className="btn btn-outline"
+                  className="btn btn-primary"
                   style={{ width: '100%' }}
-                  onClick={() => {
-                    const targetUrl = activeBooking.website_url;
-                    if (targetUrl) {
-                      window.open(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
+                  onClick={() => onCheckout(slot)}
                 >
-                  Visit Active Site ↗
+                  {startsImmediately ? 'Book Now' : 'Join Queue'}
                 </button>
-              )}
+                {activeBooking && (
+                  <button 
+                    className="btn btn-outline"
+                    style={{ width: '100%' }}
+                    onClick={() => {
+                      const targetUrl = activeBooking.website_url;
+                      if (targetUrl) {
+                        window.open(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                  >
+                    Visit Active Site ↗
+                  </button>
+                )}
+              </div>
             </div>
 
             {activeBooking && scheduledBookings.length > 0 && (

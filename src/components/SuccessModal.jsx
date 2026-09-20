@@ -23,7 +23,8 @@ export default function SuccessModal({ levelName, onClose }) {
           Character Development Unlocked
         </h2>
         <p style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: '#536471' }}>
-          Someone just sponsored Wilson.
+          you just sponsored Wilson.
+          
         </p>
         <div style={{
           background: 'var(--color-hover)',

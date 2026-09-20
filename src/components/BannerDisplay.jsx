@@ -98,7 +98,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   <div style={{
                     color: 'rgba(0,0,0,0.7)',
                     fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
-                    fontWeight: 600
+                    fontWeight: 500
                   }}>
                     ₹{(layout.type === 'big' ? 19999 : layout.type === 'small' ? 6999 : 2999).toLocaleString()}
                   </div>
@@ -108,7 +108,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   marginBottom: '2px',
                   fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
                   color: 'rgba(0,0,0,0.7)',
-                  fontWeight: 600
+                  fontWeight: 500
                 }}>
                   ₹{(layout.type === 'big' ? 19999 : layout.type === 'small' ? 6999 : 2999).toLocaleString()}
                 </div>
@@ -136,7 +136,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                     border: 'none',
                     padding: '4px 12px',
                     borderRadius: '999px',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     fontSize: '0.65rem',
                     cursor: 'pointer',
                     boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
@@ -154,7 +154,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                       border: 'none',
                       padding: '4px 12px',
                       borderRadius: '999px',
-                      fontWeight: 600,
+                      fontWeight: 500,
                       fontSize: '0.65rem',
                       cursor: 'pointer',
                       boxShadow: '0 4px 10px rgba(0,0,0,0.1)'

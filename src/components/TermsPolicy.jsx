@@ -17,35 +17,35 @@ const TermsPolicy = ({ onBack }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>1. Slot Purchases & Scheduling</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 500 }}>1. Slot Purchases & Scheduling</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
             All slot purchases are final. When you purchase a fixed-price slot, you are purchasing a 72-hour placement. If the slot is currently occupied, your placement will be automatically scheduled to begin immediately after the existing placements end.
           </p>
         </section>
 
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>2. Content Guidelines</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 500 }}>2. Content Guidelines</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
             We reserve the right to reject any logo, website link, or brand name that contains explicit material, hate speech, illegal content, or anything deemed inappropriate. If your content is rejected, you will be refunded in full.
           </p>
         </section>
 
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>3. Display Duration & Guarantees</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 500 }}>3. Display Duration & Guarantees</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
             Logos are displayed on the X (Twitter) banner as outlined in the slot description. While we guarantee placement upon approval, we do not guarantee specific impression counts, clicks, or engagement metrics from the banner.
           </p>
         </section>
 
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>4. Refund Policy</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 500 }}>4. Refund Policy</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
             Due to the digital real-estate nature of this service, <strong>no refunds</strong> will be issued once a logo has gone live on the banner. Refunds are only provided if we explicitly reject your submitted content prior to placement, or in the event of a critical technical failure on our end.
           </p>
         </section>
         
         <section>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: '600' }}>5. Modifications</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 500 }}>5. Modifications</h2>
           <p style={{ color: '#536471', lineHeight: '1.6' }}>
             We reserve the right to modify these terms or the layout of the banner at any time. Any significant structural changes to the banner that affect live slots will be communicated to current slot holders.
           </p>

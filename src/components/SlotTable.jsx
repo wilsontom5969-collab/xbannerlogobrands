@@ -49,9 +49,14 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
     return 2999;
   };
 
+  const [showAllSlots, setShowAllSlots] = useState(false);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {[...slots].sort((a, b) => getSlotPrice(b.size) - getSlotPrice(a.size)).map(slot => {
+      {[...slots]
+        .sort((a, b) => getSlotPrice(b.size) - getSlotPrice(a.size))
+        .slice(0, showAllSlots ? slots.length : 4)
+        .map(slot => {
         const fixedPrice = getSlotPrice(slot.size);
         const priceStr = `₹${fixedPrice.toLocaleString()}`;
         
@@ -71,7 +76,9 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
             padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' 
           }}>
             <div style={{ flex: '1 1 200px' }}>
-              <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.5rem' }}>{slot.id.toUpperCase()}</div>
+              <div style={{ fontWeight: 500, fontSize: '1.2rem', marginBottom: '0.5rem', letterSpacing: '-0.035em' }}>
+                {slot.id.charAt(0).toUpperCase() + slot.id.slice(1)}
+              </div>
               
               {activeBooking && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
@@ -86,8 +93,8 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
             <div style={{ flex: '2 1 300px', fontSize: '0.9rem' }}>
               {isAvailableNow ? (
                 <div>
-                  <div style={{ color: '#00ba7c', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>Available Now</div>
-                  <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>Immediately</strong></div>
+                  <div style={{ color: '#00ba7c', fontWeight: 700, fontSize: '1.1rem', marginBottom: 0, lineHeight: 1.1 }}>Available Now</div>
+                  <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>Immediately</strong></div>
                 </div>
               ) : activeBooking ? (
                 <div>
@@ -97,17 +104,17 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(activeBooking.ends_at))}
                   </div>
-                  <div style={{ color: '#536471' }}>ENDS <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
+                  <div style={{ color: '#536471' }}>Ends <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
                 </div>
               ) : (
                 <div>
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>NEXT UP</div>
                   <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{nextBooking.holder_name}</div>
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>STARTS IN</div>
+                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Starts IN</div>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(nextBooking.starts_at))}
                   </div>
-                  <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
+                  <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
                 </div>
               )}
 
@@ -159,6 +166,21 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
           </div>
         );
       })}
+
+      {!showAllSlots && slots.length > 4 && (
+        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <button 
+            className="btn btn-outline"
+            onClick={() => setShowAllSlots(true)}
+            style={{ 
+              padding: '0.75rem 2.5rem', fontWeight: 600, borderRadius: '999px', 
+              fontSize: '1rem', background: 'white', color: '#536471' 
+            }}
+          >
+            Read More ↓
+          </button>
+        </div>
+      )}
     </div>
   );
 }

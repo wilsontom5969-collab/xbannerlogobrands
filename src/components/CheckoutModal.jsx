@@ -140,29 +140,29 @@ export default function CheckoutModal({ slot, onClose }) {
         maxHeight: '90vh', overflowY: 'auto'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 500, letterSpacing: '-0.035em', fontFamily: 'var(--font-family)' }}>
             Book Placement ({slot.id.toUpperCase()})
           </h2>
           <button onClick={onClose} style={{ fontSize: '1.5rem', cursor: 'pointer', border: 'none', background: 'none' }}>×</button>
         </div>
 
-        <div style={{ background: 'var(--color-hover)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+        <div style={{ background: 'var(--color-hover)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontFamily: 'var(--font-family)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ color: '#536471' }}>Duration:</span>
-            <strong>72 HOURS</strong>
+            <span style={{ fontWeight: 500, color: '#1a1a1a' }}>72 HOURS</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ color: '#536471' }}>Your Placement Starts:</span>
-            <strong>{startsAtStr}</strong>
+            <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{startsAtStr}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ color: '#536471' }}>Your Placement Ends:</span>
-            <strong>{endsAtStr}</strong>
+            <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{endsAtStr}</span>
           </div>
           <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0.8rem 0' }}/>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
-            <strong>Fixed Price:</strong>
-            <strong>₹{fixedPrice.toLocaleString()}</strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: '#1a1a1a' }}>
+            <span style={{ fontWeight: 500 }}>Fixed Price:</span>
+            <span style={{ fontWeight: 500 }}>₹{fixedPrice.toLocaleString()}</span>
           </div>
         </div>
 

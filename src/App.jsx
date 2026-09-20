@@ -256,8 +256,8 @@ function App() {
 
           <section id="about" className="mb-16" style={{ zoom: '1' }}>
             <h2>Where the money goes</h2>
-            <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)', marginTop: '1.5rem' }}>
-              <p>This money will be used for my character development : <span style={{ fontWeight: 500 }}>my health, finances, and upcoming creative projects.</span></p>
+            <div style={{ background: 'white', padding: '1.25rem 2rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)', marginTop: '1.5rem' }}>
+              <p style={{ margin: 0, color: '#475569' }}>This money will be used for my character development : <span style={{ fontWeight: 500, color: '#1a1a1a' }}>my health, finances, and upcoming creative projects.</span></p>
             </div>
           </section>
 

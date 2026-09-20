@@ -75,7 +75,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
         return (
           <div key={slot.id} style={{ 
             background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)', 
-            padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' 
+            padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' 
           }}>
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ fontWeight: 500, fontSize: '1.1rem', marginBottom: '0.5rem', letterSpacing: '-0.035em' }}>
@@ -105,58 +105,57 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                   <div style={{ color: '#00ba7c', fontWeight: 700, fontSize: '1.1rem', marginBottom: 0, lineHeight: 1.1 }}>Available Now</div>
                   <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>Immediately</strong></div>
                 </div>
-              ) : activeBooking ? (
-                <div>
-                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Currently Showing</div>
-                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{activeBooking.holder_name}</div>
-                  {activeBooking.website_url && (
-                    <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
-                      {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                    </a>
-                  )}
-                  {!activeBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Time Left</div>
-                  <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
-                    {formatCountdown(new Date(activeBooking.ends_at))}
-                  </div>
-                  <div style={{ color: '#536471' }}>Ends <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
-                </div>
               ) : (
-                <div>
-                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
-                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{nextBooking.holder_name}</div>
-                  {nextBooking.website_url && (
-                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
-                      {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                    </a>
+                <>
+                  {activeBooking && (
+                    <div>
+                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Currently Showing</div>
+                      <div style={{ fontWeight: 500, fontSize: '1rem' }}>{activeBooking.holder_name}</div>
+                      {activeBooking.website_url && (
+                        <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                          {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                        </a>
+                      )}
+                      {!activeBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
+                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Time Left</div>
+                      <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCountdown(new Date(activeBooking.ends_at))}
+                      </div>
+                      <div style={{ color: '#536471' }}>Ends <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
+                    </div>
                   )}
-                  {!nextBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Starts In</div>
-                  <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
-                    {formatCountdown(new Date(nextBooking.starts_at))}
-                  </div>
-                  <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
-                </div>
-              )}
 
-              {activeBooking && nextBooking && (
-                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--color-border)' }}>
-                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
-                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{nextBooking.holder_name}</div>
-                  {nextBooking.website_url && (
-                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
-                      {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                    </a>
+                  {!activeBooking && scheduledBookings.slice(0, 2).map((booking, index) => (
+                    <div key={booking.id} style={{ marginTop: index > 0 ? '1.5rem' : 0 }}>
+                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                      <div style={{ fontWeight: 500, fontSize: '1rem' }}>{booking.holder_name}</div>
+                      {booking.website_url && (
+                        <a href={booking.website_url.startsWith('http') ? booking.website_url : `https://${booking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                          {booking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                        </a>
+                      )}
+                      {!booking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
+                      
+                      {index === 0 ? (
+                        <>
+                          <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Starts In</div>
+                          <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
+                            {formatCountdown(new Date(booking.starts_at))}
+                          </div>
+                          <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(booking.starts_at)}</strong></div>
+                        </>
+                      ) : (
+                        <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(booking.starts_at)}</strong></div>
+                      )}
+                    </div>
+                  ))}
+
+                  {!activeBooking && scheduledBookings.length > 2 && (
+                    <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#536471', fontWeight: 500 }}>
+                      +{scheduledBookings.length - 2} upcoming placement{scheduledBookings.length - 2 !== 1 ? 's' : ''} scheduled
+                    </div>
                   )}
-                  {!nextBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                  <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
-                </div>
-              )}
-
-              {numFutureBookings > 0 && (
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#536471' }}>
-                  {numFutureBookings} upcoming placement{numFutureBookings !== 1 ? 's' : ''} scheduled
-                </div>
+                </>
               )}
             </div>
 
@@ -179,10 +178,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                   onClick={() => {
                     const targetUrl = activeBooking.website_url;
                     if (targetUrl) {
-                      const finalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
-                      window.open(finalUrl, '_blank', 'noopener,noreferrer');
-                    } else {
-                      alert(`Visiting ${activeBooking.holder_name}'s website...`);
+                      window.open(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`, '_blank', 'noopener,noreferrer');
                     }
                   }}
                 >
@@ -190,6 +186,33 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 </button>
               )}
             </div>
+
+            {activeBooking && scheduledBookings.length > 0 && (
+              <div style={{ width: '100%', borderTop: '1px dashed var(--color-border)', marginTop: '0.5rem', paddingTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+                <div style={{ flex: '1 1 200px' }}></div>
+                <div style={{ flex: '2 1 300px', fontSize: '0.9rem' }}>
+                  {scheduledBookings.slice(0, 2).map((booking, index) => (
+                    <div key={booking.id} style={{ marginTop: index > 0 ? '1.5rem' : 0 }}>
+                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                      <div style={{ fontWeight: 500, fontSize: '1rem' }}>{booking.holder_name}</div>
+                      {booking.website_url && (
+                        <a href={booking.website_url.startsWith('http') ? booking.website_url : `https://${booking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                          {booking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                        </a>
+                      )}
+                      {!booking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
+                      <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(booking.starts_at)}</strong></div>
+                    </div>
+                  ))}
+                  {scheduledBookings.length > 2 && (
+                    <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#536471', fontWeight: 500 }}>
+                      +{scheduledBookings.length - 2} upcoming placement{scheduledBookings.length - 2 !== 1 ? 's' : ''} scheduled
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: '1 1 200px' }}></div>
+              </div>
+            )}
           </div>
         );
       })}

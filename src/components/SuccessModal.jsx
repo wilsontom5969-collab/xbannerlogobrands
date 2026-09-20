@@ -19,7 +19,7 @@ export default function SuccessModal({ levelName, onClose }) {
         position: 'relative'
       }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔓</div>
-        <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', textTransform: 'uppercase' }}>
+        <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontFamily: 'var(--font-family)', fontWeight: 500 }}>
           Character Development Unlocked
         </h2>
         <p style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: '#536471' }}>

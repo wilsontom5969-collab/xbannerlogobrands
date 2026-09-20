@@ -78,7 +78,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
             padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' 
           }}>
             <div style={{ flex: '1 1 200px' }}>
-              <div style={{ fontWeight: 500, fontSize: '1.2rem', marginBottom: '0.5rem', letterSpacing: '-0.035em' }}>
+              <div style={{ fontWeight: 500, fontSize: '1.1rem', marginBottom: '0.5rem', letterSpacing: '-0.035em' }}>
                 {slot.id.charAt(0).toUpperCase() + slot.id.slice(1)}
               </div>
               
@@ -88,7 +88,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                       <img src={activeBooking.logo_url} alt={activeBooking.holder_name} style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px' }} />
                    )}
                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                     <div style={{ fontWeight: 600 }}>{activeBooking.holder_name}</div>
+                     <div style={{ fontWeight: 500, fontSize: '1rem' }}>{activeBooking.holder_name}</div>
                      {activeBooking.website_url && (
                        <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none' }}>
                          {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
@@ -107,32 +107,32 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 </div>
               ) : activeBooking ? (
                 <div>
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Currently Showing</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{activeBooking.holder_name}</div>
+                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Currently Showing</div>
+                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{activeBooking.holder_name}</div>
                   {activeBooking.website_url && (
-                    <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                    <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
                       {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                     </a>
                   )}
                   {!activeBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Time Left</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Time Left</div>
+                  <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(activeBooking.ends_at))}
                   </div>
                   <div style={{ color: '#536471' }}>Ends <strong style={{ color: 'black' }}>{formatDate(activeBooking.ends_at)}</strong></div>
                 </div>
               ) : (
                 <div>
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Next Up</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{nextBooking.holder_name}</div>
                   {nextBooking.website_url && (
-                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
                       {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                     </a>
                   )}
                   {!nextBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Starts In</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Starts In</div>
+                  <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(nextBooking.starts_at))}
                   </div>
                   <div style={{ color: '#536471' }}>Starts <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
@@ -141,10 +141,10 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
 
               {activeBooking && nextBooking && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--color-border)' }}>
-                  <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Next Up</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                  <div style={{ fontWeight: 500, fontSize: '1rem' }}>{nextBooking.holder_name}</div>
                   {nextBooking.website_url && (
-                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
                       {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                     </a>
                   )}
@@ -162,8 +162,8 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
 
             <div style={{ flex: '1 1 200px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
               <div>
-                <div style={{ fontSize: '0.8rem', color: '#536471', fontWeight: 600 }}>3-Day Placement</div>
-                <div style={{ fontWeight: 700, fontSize: '1.3rem' }}>{priceStr}</div>
+                <div style={{ fontSize: '0.75rem', color: '#536471', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>3-Day Placement</div>
+                <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{priceStr}</div>
               </div>
               <button 
                 className="btn btn-primary"

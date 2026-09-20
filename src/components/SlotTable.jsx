@@ -82,12 +82,19 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 {slot.id.charAt(0).toUpperCase() + slot.id.slice(1)}
               </div>
               
-              {activeBooking && (
+               {activeBooking && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
                    {activeBooking.logo_url && (
                       <img src={activeBooking.logo_url} alt={activeBooking.holder_name} style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px' }} />
                    )}
-                   <div style={{ fontWeight: 600 }}>{activeBooking.holder_name}</div>
+                   <div style={{ display: 'flex', flexDirection: 'column' }}>
+                     <div style={{ fontWeight: 600 }}>{activeBooking.holder_name}</div>
+                     {activeBooking.website_url && (
+                       <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none' }}>
+                         {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                       </a>
+                     )}
+                   </div>
                 </div>
               )}
             </div>
@@ -101,7 +108,13 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
               ) : activeBooking ? (
                 <div>
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>CURRENTLY SHOWING</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{activeBooking.holder_name}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{activeBooking.holder_name}</div>
+                  {activeBooking.website_url && (
+                    <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                      {activeBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                    </a>
+                  )}
+                  {!activeBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>TIME LEFT</div>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(activeBooking.ends_at))}
@@ -111,7 +124,13 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
               ) : (
                 <div>
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>NEXT UP</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{nextBooking.holder_name}</div>
+                  {nextBooking.website_url && (
+                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                      {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                    </a>
+                  )}
+                  {!nextBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>Starts IN</div>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-accent)', marginBottom: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCountdown(new Date(nextBooking.starts_at))}
@@ -123,7 +142,13 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
               {activeBooking && nextBooking && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--color-border)' }}>
                   <div style={{ color: '#536471', fontSize: '0.8rem', fontWeight: 600 }}>NEXT UP</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{nextBooking.holder_name}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{nextBooking.holder_name}</div>
+                  {nextBooking.website_url && (
+                    <a href={nextBooking.website_url.startsWith('http') ? nextBooking.website_url : `https://${nextBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: '#00ba7c', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
+                      {nextBooking.website_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                    </a>
+                  )}
+                  {!nextBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
                   <div style={{ color: '#536471' }}>STARTS <strong style={{ color: 'black' }}>{formatDate(nextBooking.starts_at)}</strong></div>
                 </div>
               )}

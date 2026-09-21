@@ -3,7 +3,7 @@ import React from 'react';
 export default function NotFound({ onHome }) {
   return (
     <main className="container" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4rem 1rem' }}>
-      <h1 style={{
+      <h1 className="not-found-title" style={{
         fontSize: '3rem',
         fontWeight: 500,
         letterSpacing: '-0.04em',

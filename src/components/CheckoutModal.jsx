@@ -166,7 +166,7 @@ export default function CheckoutModal({ slot, onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 100, padding: '1rem'
     }}>
-      <div style={{
+      <div className="checkout-modal-inner" style={{
         backgroundColor: 'white',
         borderRadius: '16px',
         width: '100%', maxWidth: '500px',

@@ -16,14 +16,14 @@ export default function CharacterStatus({ occupiedCount }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', margin: '2rem 0' }}>
       {/* Left Arrow pointing right */}
-      <div className="animate-bounce-right" style={{ color: '#2C2C2C' }}>
+      <div className="animate-bounce-right hide-mobile" style={{ color: '#2C2C2C' }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </div>
 
-      <div className="character-status-box" style={{
+      <div className="character-status-box mobile-items-center" style={{
         display: 'flex', alignItems: 'center', gap: '2rem',
         background: 'white', padding: '2rem',
         borderRadius: '16px', border: '1px solid var(--color-border)',
@@ -70,7 +70,7 @@ export default function CharacterStatus({ occupiedCount }) {
       </div>
 
       {/* Right Arrow pointing left */}
-      <div className="animate-bounce-left" style={{ color: '#2C2C2C' }}>
+      <div className="animate-bounce-left hide-mobile" style={{ color: '#2C2C2C' }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>

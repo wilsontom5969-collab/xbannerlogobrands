@@ -130,6 +130,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                 padding: '4px'
               }}>
                 <button 
+                  className="banner-hover-btn"
                   style={{
                     backgroundColor: 'var(--color-accent)', // Blue button
                     color: 'white',
@@ -148,6 +149,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                 
                 {!isAvailable && (
                   <button 
+                    className="banner-hover-btn"
                     style={{
                       backgroundColor: 'white',
                       color: 'black',

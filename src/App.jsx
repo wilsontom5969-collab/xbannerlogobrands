@@ -170,7 +170,7 @@ function App() {
           </div>
 
           <section style={{ textAlign: 'center', marginBottom: '4rem', marginTop: '2rem', zoom: '0.8' }}>
-            <h1 style={{
+            <h1 className="hero-title" style={{
               fontSize: '64px',
               fontWeight: 500,
               lineHeight: '67.2px',
@@ -181,7 +181,7 @@ function App() {
             }}>
               Sponsor my <br /> <span style={{ color: '#2C2C2C' }}>Character Development</span>
             </h1>
-            <p style={{ fontSize: '1.35rem', color: '#2C2C2C', maxWidth: '600px', margin: '0 auto', marginBottom: '2rem', fontWeight: 400 }}>
+            <p className="hero-subtitle" style={{ fontSize: '1.35rem', color: '#2C2C2C', maxWidth: '600px', margin: '0 auto', marginBottom: '2rem', fontWeight: 400 }}>
               Put your logo on my <a href="https://x.com/writtenbywilson" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}><svg viewBox="0 0 512 512" aria-hidden="true" style={{ height: '1.25em', width: '1.25em', fill: '#2C2C2C', verticalAlign: '-0.25em', display: 'inline-block', marginRight: '0.15em', marginLeft: '0.15em' }}><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z" /></svg></a> <span style={{ fontWeight: 400, fontFamily: 'Helvetica, Arial, sans-serif', color: '#2C2C2C' }}>banner</span>
             </p>
             <div className="animate-bounce-down" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -234,7 +234,7 @@ function App() {
             padding: '5rem 1rem',
           }}>
             <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', zoom: '0.8' }}>
-              <h2 style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>How it works</h2>
+              <h2 className="section-title" style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>How it works</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>1</div>
@@ -268,7 +268,7 @@ function App() {
             </div>
           </section>
 
-          <section className="mb-16" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', zoom: '0.8' }}>
+          <section className="mb-16 founder-flex" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', zoom: '0.8' }}>
             <div
               className="founder-img"
               style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}
@@ -319,7 +319,7 @@ function App() {
         marginTop: '4rem', textAlign: 'center', color: '#536471', fontSize: '0.9rem',
         zoom: '0.8'
       }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
+        <div className="container footer-links" style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
           <a href="#terms" onClick={(e) => { e.preventDefault(); setCurrentView('terms'); window.scrollTo(0, 0); }} style={{ textDecoration: 'underline' }}>Terms & Refund Policy</a>
           <a href="mailto:wilsontom5969@gmail.com" style={{ textDecoration: 'underline' }}>wilsontom5969@gmail.com</a>
         </div>

@@ -9,7 +9,7 @@ export default function SuccessModal({ levelName, onClose }) {
       zIndex: 200, padding: '1rem',
       backdropFilter: 'blur(4px)'
     }}>
-      <div style={{
+      <div className="success-modal-inner" style={{
         backgroundColor: 'white',
         borderRadius: '16px',
         width: '100%', maxWidth: '400px',

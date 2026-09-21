@@ -159,7 +159,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
               )}
             </div>
 
-            <div style={{ flex: '1 1 200px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
+            <div className="mobile-text-center mobile-items-center" style={{ flex: '1 1 200px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#536471', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>3-Day Placement</div>
                 <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{priceStr}</div>

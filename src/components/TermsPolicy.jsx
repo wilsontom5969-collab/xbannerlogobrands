@@ -11,7 +11,7 @@ const TermsPolicy = ({ onBack }) => {
         ← Back to Home
       </button>
 
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', letterSpacing: '-0.03em' }}>
+      <h1 className="terms-title" style={{ fontSize: '2.5rem', marginBottom: '2rem', letterSpacing: '-0.03em' }}>
         Terms & Refund Policy
       </h1>
 

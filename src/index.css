@@ -248,6 +248,10 @@ p {
   animation: bounce-right 1.5s infinite ease-in-out;
 }
 
+.hide-desktop {
+  display: none !important;
+}
+
 .animate-bounce-left {
   animation: bounce-left 1.5s infinite ease-in-out;
 }
@@ -348,14 +352,15 @@ p {
   .founder-flex {
     flex-direction: column !important;
     text-align: center !important;
+    padding: 0 1rem !important;
   }
   
   .founder-flex .social-icon-box {
-    margin: 0 auto;
+    margin: 0 !important;
   }
   
   .founder-flex > div:last-child > div {
-    justify-content: center;
+    justify-content: center !important;
   }
 
   .mobile-text-left {
@@ -368,6 +373,14 @@ p {
   
   .mobile-items-center {
     align-items: center !important;
+  }
+
+  .mobile-items-start {
+    align-items: flex-start !important;
+  }
+  
+  .hide-desktop {
+    display: block !important;
   }
   
   .hide-mobile {
@@ -382,11 +395,12 @@ p {
   
   .footer-links {
     flex-direction: column !important;
-    gap: 1rem !important;
+    gap: 1.25rem !important;
   }
   
   .section-title {
     font-size: 2rem !important;
+    line-height: 1.2 !important;
   }
   
   .not-found-title {
@@ -395,6 +409,8 @@ p {
   
   .checkout-modal-inner, .success-modal-inner {
     padding: 1.5rem 1rem !important;
+    margin: 1rem !important;
+    width: calc(100% - 2rem) !important;
   }
   
   .banner-hover-btn {
@@ -404,5 +420,63 @@ p {
   
   .terms-title {
     font-size: 1.8rem !important;
+  }
+
+  /* SECOND PASS CLASSES */
+  .mobile-card {
+    padding: 1rem !important;
+    gap: 1.25rem !important;
+  }
+
+  .mobile-gap-md {
+    gap: 1.5rem !important;
+  }
+  
+  .mobile-step-gap {
+    gap: 1rem !important;
+  }
+
+  .mobile-founder-img {
+    width: 110px !important;
+    height: 110px !important;
+  }
+
+  .mobile-text-sm {
+    font-size: 0.7rem !important;
+  }
+
+  .mobile-mb-lg {
+    margin-bottom: 3rem !important;
+  }
+
+  /* THIRD PASS CLASSES */
+  .mobile-header-nav {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 1rem !important;
+    font-size: 0.85rem !important;
+    padding-bottom: 0.25rem !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-header-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-slot-price {
+    font-size: 0.55rem !important;
+  }
+
+  .mobile-slot-box {
+    border-radius: 4px !important;
+  }
+
+  .mobile-social-gap {
+    gap: 1rem !important;
+  }
+  
+  .mobile-label-sm {
+    font-size: 0.65rem !important;
+    color: #8899a6 !important; /* Slightly lighter gray */
   }
 }

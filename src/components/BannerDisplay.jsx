@@ -47,6 +47,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
         return (
           <div 
             key={layout.id}
+            className="mobile-slot-box"
             onMouseEnter={() => setHoveredSlot(layout.id)}
             onMouseLeave={() => setHoveredSlot(null)}
             style={{
@@ -75,7 +76,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: isAvailable ? 'flex-end' : 'center',
+              justifyContent: 'center',
               filter: isHovered ? 'blur(4px)' : 'none',
               transition: 'filter 0.2s ease',
               padding: '4px'
@@ -95,7 +96,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                         display: 'block', margin: '0 auto'
                      }} />
                   )}
-                  <div style={{
+                  <div className="mobile-slot-price" style={{
                     color: 'rgba(0,0,0,0.7)',
                     fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
                     fontWeight: 500
@@ -104,8 +105,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  marginBottom: '2px',
+                <div className="mobile-slot-price" style={{
                   fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
                   color: 'rgba(0,0,0,0.7)',
                   fontWeight: 500
@@ -117,7 +117,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
 
             {/* Hover Actions Overlay */}
             {isHovered && (
-              <div style={{
+              <div className="hide-mobile" style={{
                 position: 'absolute',
                 inset: 0,
                 display: 'flex',

@@ -28,6 +28,7 @@ function App() {
   const [visitors, setVisitors] = useState(0);
   const [slots, setSlots] = useState(INITIAL_SLOTS);
   const [checkoutSlot, setCheckoutSlot] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState(() => {
     const path = window.location.pathname;
     if (path !== '/' && path !== '/index.html') {
@@ -134,16 +135,38 @@ function App() {
 
   return (
     <>
-      <header style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--color-border)', marginBottom: '1.5rem', background: '#ffffff' }}>
+      <header style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--color-border)', marginBottom: '1.5rem', background: '#ffffff', position: 'relative' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
-          <a href="/" style={{ display: 'block' }}>
+          <a href="/" style={{ display: 'block', zIndex: 100 }}>
             <img
               src="/logo.png"
               alt="Let The Banner Cook"
               style={{ height: '30px', width: 'auto', display: 'block' }}
             />
           </a>
-          <nav className="nav-links" style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
+          
+          <button 
+            className="mobile-menu-btn hide-desktop"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', zIndex: 100, padding: '0.5rem' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {isMobileMenuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
+            </svg>
+          </button>
+
+          <nav className="nav-links hide-mobile" style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
             <a href="#slots" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>Slots</a>
             <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>How it works</a>
             <a href="#about" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>About Founder</a>
@@ -152,6 +175,24 @@ function App() {
             </a>
           </nav>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {isMobileMenuOpen && (
+          <div className="mobile-dropdown-menu" style={{
+            position: 'absolute', top: '100%', left: 0, right: 0, 
+            background: 'white', borderBottom: '1px solid var(--color-border)', 
+            padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem',
+            alignItems: 'flex-end',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 90
+          }}>
+            <a href="#slots" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>Slots</a>
+            <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>How it works</a>
+            <a href="#about" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>About Founder</a>
+            <a href="https://x.com/writtenbywilson" onClick={() => setIsMobileMenuOpen(false)} target="_blank" rel="noreferrer" style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', display: 'flex', alignItems: 'center', textAlign: 'right' }}>
+              X (Twitter)
+            </a>
+          </div>
+        )}
       </header>
 
       {currentView === 'home' ? (
@@ -235,22 +276,22 @@ function App() {
           }}>
             <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', zoom: '0.8' }}>
               <h2 className="section-title" style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>How it works</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div className="mobile-gap-md" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>1</div>
                   <div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 500, color: '#1a1a1a' }}>Choose a Spot</h3>
                     <p style={{ fontSize: '1.05rem', lineHeight: '1.6', color: '#666' }}>Select between micro, small, or big slots for a fixed-price 72-hour placement.</p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>2</div>
                   <div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 500, color: '#1a1a1a' }}>Book Placement</h3>
                     <p style={{ fontSize: '1.05rem', lineHeight: '1.6', color: '#666' }}>Enter your brand info, upload a logo, and pay the fixed price. Your spot is instantly secured.</p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>3</div>
                   <div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 500, color: '#1a1a1a' }}>Go Live</h3>
@@ -268,9 +309,9 @@ function App() {
             </div>
           </section>
 
-          <section className="mb-16 founder-flex" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', zoom: '0.8' }}>
+          <section className="mb-16 mobile-mb-lg founder-flex" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', zoom: '0.8' }}>
             <div
-              className="founder-img"
+              className="founder-img mobile-founder-img"
               style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}
             >
               <img

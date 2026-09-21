@@ -480,8 +480,22 @@ p {
     color: #8899a6 !important; /* Slightly lighter gray */
   }
 
+  .mobile-slot-price.hide-booked-price-mobile,
   .hide-booked-price-mobile {
     display: none !important;
+  }
+
+  .slot-pricing-text {
+    text-align: left !important;
+  }
+  
+  .slot-pricing-actions {
+    align-items: flex-start !important;
+  }
+  
+  .slot-pricing-actions .btn {
+    width: auto !important;
+    min-width: 150px !important;
   }
 
   .booked-logo-img {

@@ -50,6 +50,20 @@ export default function BannerDisplay({ slots, onCheckout }) {
             className="mobile-slot-box"
             onMouseEnter={() => setHoveredSlot(layout.id)}
             onMouseLeave={() => setHoveredSlot(null)}
+            onClick={(e) => {
+              if (window.innerWidth <= 768 && !isAvailable) {
+                const wantToVisit = window.confirm("Visit Active Site?\n\nPress OK to Visit the Site.\nPress Cancel to Join the Queue.");
+                if (wantToVisit && slotData.website_url) {
+                  window.open(slotData.website_url.startsWith('http') ? slotData.website_url : `https://${slotData.website_url}`, '_blank');
+                  return;
+                } else if (wantToVisit && !slotData.website_url) {
+                  alert("No active site URL found for this booking.");
+                  return;
+                }
+              }
+              const section = document.getElementById('slots');
+              if (section) section.scrollIntoView({ behavior: 'smooth' });
+            }}
             style={{
               position: 'absolute',
               left: layout.left,

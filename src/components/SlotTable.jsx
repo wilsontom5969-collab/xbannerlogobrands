@@ -73,7 +73,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
         const startsImmediately = !activeBooking;
 
         return (
-          <div key={slot.id} style={{ 
+          <div key={slot.id} className="mobile-card" style={{ 
             background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)', 
             padding: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' 
           }}>
@@ -109,7 +109,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 <>
                   {activeBooking && (
                     <div>
-                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Currently Showing</div>
+                      <div className="mobile-label-sm" style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Currently Showing</div>
                       <div style={{ fontWeight: 500, fontSize: '1rem' }}>{activeBooking.holder_name}</div>
                       {activeBooking.website_url && (
                         <a href={activeBooking.website_url.startsWith('http') ? activeBooking.website_url : `https://${activeBooking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
@@ -117,7 +117,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                         </a>
                       )}
                       {!activeBooking.website_url && <div style={{ marginBottom: '0.5rem' }}></div>}
-                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Time Left</div>
+                      <div className="mobile-label-sm" style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Time Left</div>
                       <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCountdown(new Date(activeBooking.ends_at))}
                       </div>
@@ -127,7 +127,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
 
                   {!activeBooking && scheduledBookings.slice(0, 2).map((booking, index) => (
                     <div key={booking.id} style={{ marginTop: index > 0 ? '1.5rem' : 0 }}>
-                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                      <div className="mobile-label-sm" style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
                       <div style={{ fontWeight: 500, fontSize: '1rem' }}>{booking.holder_name}</div>
                       {booking.website_url && (
                         <a href={booking.website_url.startsWith('http') ? booking.website_url : `https://${booking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
@@ -138,7 +138,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                       
                       {index === 0 ? (
                         <>
-                          <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Starts In</div>
+                          <div className="mobile-label-sm" style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Starts In</div>
                           <div style={{ fontWeight: 500, fontSize: '1.1rem', color: 'var(--color-accent)', marginBottom: '0.2rem', fontVariantNumeric: 'tabular-nums' }}>
                             {formatCountdown(new Date(booking.starts_at))}
                           </div>
@@ -159,12 +159,12 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
               )}
             </div>
 
-            <div className="mobile-text-center mobile-items-center" style={{ flex: '1 1 200px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: '#536471', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>3-Day Placement</div>
+            <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="slot-pricing-col">
+              <div style={{ textAlign: 'right' }} className="slot-pricing-text">
+                <div className="mobile-label-sm" style={{ fontSize: '0.75rem', color: '#536471', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>3-Day Placement</div>
                 <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{priceStr}</div>
               </div>
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }} className="slot-pricing-actions">
                 <button 
                   className="btn btn-primary"
                   style={{ width: '100%' }}
@@ -195,7 +195,7 @@ export default function SlotTable({ slots, onCheckout, onRefresh }) {
                 <div style={{ flex: '2 1 300px', fontSize: '0.9rem' }}>
                   {scheduledBookings.slice(0, 2).map((booking, index) => (
                     <div key={booking.id} style={{ marginTop: index > 0 ? '1.5rem' : 0 }}>
-                      <div style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
+                      <div className="mobile-label-sm" style={{ color: '#536471', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Next Up</div>
                       <div style={{ fontWeight: 500, fontSize: '1rem' }}>{booking.holder_name}</div>
                       {booking.website_url && (
                         <a href={booking.website_url.startsWith('http') ? booking.website_url : `https://${booking.website_url}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#536471', textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>

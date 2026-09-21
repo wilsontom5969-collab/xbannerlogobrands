@@ -176,7 +176,7 @@ function App() {
               lineHeight: '67.2px',
               letterSpacing: '-3.84px',
               marginBottom: '1.5rem',
-              color: '#555555',
+              color: '#2C2C2C',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
             }}>
               Sponsor my <br /> <span style={{ color: '#2C2C2C' }}>Character Development</span>

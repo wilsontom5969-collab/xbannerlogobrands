@@ -21,6 +21,7 @@ const SLOT_LAYOUT = [
 
 export default function BannerDisplay({ slots, onCheckout }) {
   const [hoveredSlot, setHoveredSlot] = useState(null);
+  const [mobileActionSlot, setMobileActionSlot] = useState(null);
 
   return (
     <div style={{
@@ -52,14 +53,8 @@ export default function BannerDisplay({ slots, onCheckout }) {
             onMouseLeave={() => setHoveredSlot(null)}
             onClick={(e) => {
               if (window.innerWidth <= 768 && !isAvailable) {
-                const wantToVisit = window.confirm("Visit Active Site?\n\nPress OK to Visit the Site.\nPress Cancel to Join the Queue.");
-                if (wantToVisit && slotData.website_url) {
-                  window.open(slotData.website_url.startsWith('http') ? slotData.website_url : `https://${slotData.website_url}`, '_blank');
-                  return;
-                } else if (wantToVisit && !slotData.website_url) {
-                  alert("No active site URL found for this booking.");
-                  return;
-                }
+                setMobileActionSlot(slotData);
+                return;
               }
               const section = document.getElementById('slots');
               if (section) section.scrollIntoView({ behavior: 'smooth' });
@@ -195,6 +190,75 @@ export default function BannerDisplay({ slots, onCheckout }) {
           </div>
         );
       })}
+
+      {/* Custom Mobile Action Modal */}
+      {mobileActionSlot && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center'
+        }} onClick={() => setMobileActionSlot(null)}>
+          <div style={{
+            background: 'white',
+            width: '100%',
+            padding: '2rem 1.5rem',
+            borderTopLeftRadius: '20px',
+            borderTopRightRadius: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            animation: 'slideUp 0.3s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1a1a1a' }}>Slot Options</h3>
+              <p style={{ margin: '0.25rem 0 0 0', color: '#536471', fontSize: '0.9rem' }}>Choose an action for this booked placement.</p>
+            </div>
+            
+            <button 
+              className="btn btn-outline" 
+              style={{ width: '100%', padding: '1rem', fontSize: '1rem' }}
+              onClick={() => {
+                const targetUrl = mobileActionSlot.website_url;
+                if (targetUrl) {
+                  window.open(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`, '_blank');
+                } else {
+                  alert("No active site URL found for this booking.");
+                }
+                setMobileActionSlot(null);
+              }}
+            >
+              Visit Active Site ↗
+            </button>
+            
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '1rem', fontSize: '1rem' }}
+              onClick={() => {
+                setMobileActionSlot(null);
+                const section = document.getElementById('slots');
+                if (section) section.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Join Queue
+            </button>
+            
+            <button 
+              style={{ 
+                background: 'none', border: 'none', width: '100%', 
+                padding: '0.75rem', marginTop: '0.5rem', color: '#536471', 
+                fontSize: '0.9rem', fontWeight: 500 
+              }}
+              onClick={() => setMobileActionSlot(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

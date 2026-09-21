@@ -479,4 +479,14 @@ p {
     font-size: 0.65rem !important;
     color: #8899a6 !important; /* Slightly lighter gray */
   }
+
+  .hide-booked-price-mobile {
+    display: none !important;
+  }
+
+  .booked-logo-img {
+    max-height: 85% !important;
+    max-width: 85% !important;
+    padding-bottom: 0 !important;
+  }
 }

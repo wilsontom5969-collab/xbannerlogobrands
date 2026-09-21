@@ -91,12 +91,12 @@ export default function BannerDisplay({ slots, onCheckout }) {
                   height: '100%'
                 }}>
                   {slotData.logo_url && (
-                     <img src={slotData.logo_url} alt="" style={{
+                     <img src={slotData.logo_url} alt="" className="booked-logo-img" style={{
                         maxWidth: '70%', maxHeight: '60%', objectFit: 'contain', paddingBottom: '4px',
                         display: 'block', margin: '0 auto'
                      }} />
                   )}
-                  <div className="mobile-slot-price" style={{
+                  <div className="mobile-slot-price hide-booked-price-mobile" style={{
                     color: 'rgba(0,0,0,0.7)',
                     fontSize: layout.type === 'micro' ? '0.6rem' : '0.85rem',
                     fontWeight: 500

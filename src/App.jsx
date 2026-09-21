@@ -6,6 +6,7 @@ import CheckoutModal from './components/CheckoutModal';
 import TermsPolicy from './components/TermsPolicy';
 import CharacterStatus, { getCharacterLevel } from './components/CharacterStatus';
 import SuccessModal from './components/SuccessModal';
+import NotFound from './components/NotFound';
 
 import { supabase } from './lib/supabaseClient';
 
@@ -27,7 +28,13 @@ function App() {
   const [visitors, setVisitors] = useState(0);
   const [slots, setSlots] = useState(INITIAL_SLOTS);
   const [checkoutSlot, setCheckoutSlot] = useState(null);
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, setCurrentView] = useState(() => {
+    const path = window.location.pathname;
+    if (path !== '/' && path !== '/index.html') {
+      return '404';
+    }
+    return 'home';
+  });
   const [successData, setSuccessData] = useState(null);
 
   const fetchSlots = async () => {
@@ -301,8 +308,10 @@ function App() {
             </div>
           </section>
         </main>
-      ) : (
+      ) : currentView === 'terms' ? (
         <TermsPolicy onBack={() => setCurrentView('home')} />
+      ) : (
+        <NotFound onHome={() => setCurrentView('home')} />
       )}
 
       <footer style={{

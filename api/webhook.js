@@ -20,11 +20,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing Razorpay signature' });
     }
 
-    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
+    const razorpayWebhookSecret = env.RAZORPAY_WEBHOOK_SECRET;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!razorpayKeySecret || !supabaseUrl || !supabaseServiceKey) {
+    if (!razorpayWebhookSecret || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing webhook configuration in environment variables.');
       return res.status(500).json({ error: 'Server configuration error' });
     }
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     // Verify Signature using HMAC SHA-256
     const cryptoKey = await webcrypto.subtle.importKey(
       'raw',
-      new TextEncoder().encode(razorpayKeySecret),
+      new TextEncoder().encode(razorpayWebhookSecret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['verify', 'sign']

@@ -10,11 +10,11 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: 'Missing Razorpay signature' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const razorpayKeySecret = env.RAZORPAY_KEY_SECRET;
+    const razorpayWebhookSecret = env.RAZORPAY_WEBHOOK_SECRET;
     const supabaseUrl = env.VITE_SUPABASE_URL;
     const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!razorpayKeySecret || !supabaseUrl || !supabaseServiceKey) {
+    if (!razorpayWebhookSecret || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing webhook configuration in environment variables.');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
@@ -22,7 +22,7 @@ export async function onRequestPost(context) {
     // Verify Signature using HMAC SHA-256
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      new TextEncoder().encode(razorpayKeySecret),
+      new TextEncoder().encode(razorpayWebhookSecret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['verify', 'sign']

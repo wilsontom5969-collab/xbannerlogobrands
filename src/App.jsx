@@ -200,7 +200,8 @@ function App() {
 
           <nav className="nav-links hide-mobile" style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
             <a href="#slots" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>Slots</a>
-            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>HTF does this works</a>
+            <a href="#wtf-is-this" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>WTF is Brand My Arc?</a>
+            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>How TF does this works</a>
             <a href="#about" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>About Founder</a>
             <a href="https://x.com/writtenbywilson" target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0, display: 'flex', alignItems: 'center' }} aria-label="X (Twitter)">
               <svg viewBox="0 0 512 512" aria-hidden="true" style={{ height: '1.15em', width: '1.15em', fill: 'currentColor' }}><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z" /></svg>
@@ -218,6 +219,7 @@ function App() {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 90
           }}>
             <a href="#slots" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>Slots</a>
+            <a href="#wtf-is-this" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>WTF is Brand My Arc?</a>
             <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>How it works</a>
             <a href="#about" onClick={() => setIsMobileMenuOpen(false)} style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', textAlign: 'right' }}>About Founder</a>
             <a href="https://x.com/writtenbywilson" onClick={() => setIsMobileMenuOpen(false)} target="_blank" rel="noreferrer" style={{ fontSize: '1rem', color: '#2C2C2C', fontWeight: 500, padding: '0.5rem 0', display: 'flex', alignItems: 'center', textAlign: 'right' }}>

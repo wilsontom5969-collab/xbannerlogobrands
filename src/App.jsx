@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './index.css';
 import BannerDisplay from './components/BannerDisplay';
 import SlotTable from './components/SlotTable';
@@ -9,6 +9,38 @@ import SuccessModal from './components/SuccessModal';
 import NotFound from './components/NotFound';
 
 import { supabase } from './lib/supabaseClient';
+
+const FadeInSection = ({ children, delay = 0, className = "" }) => {
+  const [isVisible, setVisible] = useState(false);
+  const domRef = useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    if (domRef.current) {
+      observer.observe(domRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`fade-up-section ${isVisible ? 'is-visible' : ''} ${className}`}
+      style={{ transitionDelay: `${delay}s` }}
+    >
+      {children}
+    </div>
+  );
+};
 
 const INITIAL_SLOTS = [
   { id: 'big-1', size: 'big', status: 'available' },
@@ -168,7 +200,7 @@ function App() {
 
           <nav className="nav-links hide-mobile" style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
             <a href="#slots" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>Slots</a>
-            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>How it works</a>
+            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>HTF does this works</a>
             <a href="#about" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0 }}>About Founder</a>
             <a href="https://x.com/writtenbywilson" target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#2C2C2C', fontWeight: 500, margin: 0, display: 'flex', alignItems: 'center' }} aria-label="X (Twitter)">
               <svg viewBox="0 0 512 512" aria-hidden="true" style={{ height: '1.15em', width: '1.15em', fill: 'currentColor' }}><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z" /></svg>
@@ -262,7 +294,53 @@ function App() {
             <SlotTable slots={slots} onCheckout={setCheckoutSlot} onRefresh={fetchSlots} />
           </section>
 
-
+          <section id="wtf-is-this" className="mb-16" style={{
+            background: '#fafafa',
+            width: '100vw',
+            position: 'relative',
+            left: '50%',
+            right: '50%',
+            marginLeft: '-50vw',
+            marginRight: '-50vw',
+            padding: '5rem 1rem',
+            borderTop: '1px solid var(--color-border)',
+            borderBottom: '1px solid var(--color-border)',
+          }}>
+            <FadeInSection>
+            <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', zoom: '0.8' }}>
+              <h2 className="section-title" style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>WTF is <span className="text-accent">Brand My Arc</span>?</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <FadeInSection delay={0.1}>
+                  <p style={{ fontSize: '1.25rem', lineHeight: '1.7', color: '#1a1a1a', fontWeight: 500, margin: 0 }}>
+                    You sponsor my character development.<br />
+                    I put your brand on my banner.
+                  </p>
+                </FadeInSection>
+                <FadeInSection delay={0.2}>
+                  <p style={{ fontSize: '1.1rem', lineHeight: '1.7', color: '#475569', margin: 0 }}>
+                    I’m documenting my journey of becoming someone I’m proud of, learning new skills, taking risks, building things, failing, improving, and figuring life out along the way.
+                  </p>
+                </FadeInSection>
+                <FadeInSection delay={0.3}>
+                  <p style={{ fontSize: '1.1rem', lineHeight: '1.7', color: '#475569', margin: 0 }}>
+                    Brands can sponsor that journey by putting their logo on my X banner.
+                  </p>
+                </FadeInSection>
+                <FadeInSection delay={0.4}>
+                  <p style={{ fontSize: '1.1rem', lineHeight: '1.7', color: '#475569', margin: 0 }}>
+                    Your money helps fund the person I’m becoming.<br />
+                    Your logo becomes part of the story.
+                  </p>
+                </FadeInSection>
+                <FadeInSection delay={0.5}>
+                  <p style={{ fontSize: '1.25rem', lineHeight: '1.7', color: '#1a1a1a', fontWeight: 600, margin: 0, marginTop: '1rem' }}>
+                    That’s Brand My Arc.
+                  </p>
+                </FadeInSection>
+              </div>
+            </div>
+            </FadeInSection>
+          </section>
 
           <section id="how-it-works" className="mb-16" style={{
             background: '#ffffff',
@@ -274,9 +352,11 @@ function App() {
             marginRight: '-50vw',
             padding: '5rem 1rem',
           }}>
+            <FadeInSection>
             <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', zoom: '0.8' }}>
-              <h2 className="section-title" style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>How it works</h2>
+              <h2 className="section-title" style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: '2.5rem', color: '#1a1a1a' }}>How TF Does <span className="text-accent">Brand My Arc</span> work?</h2>
               <div className="mobile-gap-md" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                <FadeInSection delay={0.1}>
                 <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>1</div>
                   <div>
@@ -284,6 +364,8 @@ function App() {
                     <p style={{ fontSize: '1.05rem', lineHeight: '1.6', color: '#666' }}>Select between micro, small, or big slots for a fixed-price 72-hour placement.</p>
                   </div>
                 </div>
+                </FadeInSection>
+                <FadeInSection delay={0.2}>
                 <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>2</div>
                   <div>
@@ -291,6 +373,8 @@ function App() {
                     <p style={{ fontSize: '1.05rem', lineHeight: '1.6', color: '#666' }}>Enter your brand info, upload a logo, and pay the fixed price. Your spot is instantly secured.</p>
                   </div>
                 </div>
+                </FadeInSection>
+                <FadeInSection delay={0.3}>
                 <div className="mobile-step-gap" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#222', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 500, flexShrink: 0 }}>3</div>
                   <div>
@@ -298,14 +382,16 @@ function App() {
                     <p style={{ fontSize: '1.05rem', lineHeight: '1.6', color: '#666' }}>If the slot is empty, you go live immediately. Otherwise, you're queued and go live automatically when the current placement ends.</p>
                   </div>
                 </div>
+                </FadeInSection>
               </div>
             </div>
+            </FadeInSection>
           </section>
 
           <section id="about" className="mb-16" style={{ zoom: '1' }}>
             <h2>Where the money goes</h2>
             <div style={{ background: 'white', padding: '1.25rem 2rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)', marginTop: '1.5rem' }}>
-              <p style={{ margin: 0, color: '#475569' }}>This money will be used for my character development : <span style={{ fontWeight: 500, color: '#1a1a1a' }}>my health, finances, and upcoming creative projects.</span></p>
+              <p style={{ margin: 0, color: '#475569' }}>Every rupee helps write the next chapter of who I’m becoming from <span style={{ fontWeight: 500, color: '#1a1a1a' }}>taking better care of myself to trying things I’ve never done before.</span></p>
             </div>
           </section>
 

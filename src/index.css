@@ -3,7 +3,7 @@
 :root {
   --color-bg: #ffffff;
   --color-text: #000000;
-  --color-accent: #1d9bf0; /* X Blue */
+  --color-accent: #0066ff; /* Primary Blue */
   --color-border: #e2e8f0;
   --color-hover: #f7f9f9;
   
@@ -503,4 +503,27 @@ p {
     max-width: 85% !important;
     padding-bottom: 0 !important;
   }
+}
+
+/* Scroll Animations */
+.fade-up-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.fade-up-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-up-section-fast {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-up-section-fast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

@@ -231,7 +231,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                 setMobileActionSlot(null);
               }}
             >
-              Visit Active Site ↗
+              Visit Site ↗
             </button>
             
             <button 

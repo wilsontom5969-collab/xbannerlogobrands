@@ -452,6 +452,9 @@ function App() {
           <a href="#terms" onClick={(e) => { e.preventDefault(); setCurrentView('terms'); window.scrollTo(0, 0); }} style={{ textDecoration: 'underline' }}>Terms & Refund Policy</a>
           <a href="mailto:wilsontom5969@gmail.com" style={{ textDecoration: 'underline' }}>wilsontom5969@gmail.com</a>
         </div>
+        <div style={{ textAlign: 'center', marginTop: '2rem', color: '#666', fontSize: '0.85rem' }}>
+          &copy; 2026 Wilson, Brand My Arc. All rights reserved.
+        </div>
       </footer>
 
       {checkoutSlot && (

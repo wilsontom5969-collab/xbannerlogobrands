@@ -70,7 +70,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
               border: `1px dashed ${isAvailable ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.15)'}`,
               borderRadius: '8px',
               cursor: 'pointer',
-              transition: 'all 0.2s',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -87,7 +87,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
               alignItems: 'center',
               justifyContent: 'center',
               filter: isHovered ? 'blur(4px)' : 'none',
-              transition: 'filter 0.2s ease',
+              transition: 'filter 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               padding: '4px'
             }}>
               {!isAvailable ? (
@@ -125,39 +125,41 @@ export default function BannerDisplay({ slots, onCheckout }) {
             </div>
 
             {/* Hover Actions Overlay */}
-            {isHovered && (
-              <div className="hide-mobile" style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                zIndex: 10,
-                backgroundColor: 'rgba(0,0,0,0.5)', // Slightly darker for better contrast
-                padding: '4px'
-              }}>
+            <div className="hide-mobile" style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              zIndex: 10,
+              backgroundColor: 'rgba(0,0,0,0.5)', // Slightly darker for better contrast
+              padding: '4px',
+              opacity: isHovered ? 1 : 0,
+              pointerEvents: isHovered ? 'auto' : 'none',
+              transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <button 
+                className="banner-hover-btn"
+                style={{
+                  backgroundColor: 'var(--color-accent)', // Blue button
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 12px',
+                  borderRadius: '999px',
+                  fontWeight: 500,
+                  fontSize: '0.65rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                }}
+                onClick={(e) => { e.stopPropagation(); onCheckout(slotData); }}
+              >
+                {isAvailable ? 'Buy' : 'Queue'}
+              </button>
+              
+              {!isAvailable && (
                 <button 
-                  className="banner-hover-btn"
-                  style={{
-                    backgroundColor: 'var(--color-accent)', // Blue button
-                    color: 'white',
-                    border: 'none',
-                    padding: '4px 12px',
-                    borderRadius: '999px',
-                    fontWeight: 500,
-                    fontSize: '0.65rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                  }}
-                  onClick={(e) => { e.stopPropagation(); onCheckout(slotData); }}
-                >
-                  {isAvailable ? 'Buy' : 'Queue'}
-                </button>
-                
-                {!isAvailable && (
-                  <button 
                     className="banner-hover-btn"
                     style={{
                       backgroundColor: 'white',
@@ -185,8 +187,7 @@ export default function BannerDisplay({ slots, onCheckout }) {
                     Visit ↗
                   </button>
                 )}
-              </div>
-            )}
+            </div>
           </div>
         );
       })}

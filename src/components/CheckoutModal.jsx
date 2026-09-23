@@ -106,7 +106,7 @@ export default function CheckoutModal({ slot, onClose }) {
         key: orderData.key,
         amount: orderData.amount,
         currency: 'INR',
-        name: 'Let The Banner Cook',
+        name: 'Brand My Arc',
         description: `Booking for ${slot.id.toUpperCase()}`,
         order_id: orderData.order_id,
         handler: async function (response) {
@@ -136,7 +136,7 @@ export default function CheckoutModal({ slot, onClose }) {
         },
         prefill: {
           name: brandName || 'User',
-          email: 'customer@letthebannercook.com',
+          email: 'customer@brandmyarc.com',
         },
         theme: {
           color: '#1DA1F2'

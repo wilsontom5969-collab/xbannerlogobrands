@@ -172,7 +172,7 @@ function App() {
           <a href="/" style={{ display: 'block', zIndex: 100 }}>
             <img
               src="/logo.png"
-              alt="Let The Banner Cook"
+              alt="Brand My Arc"
               style={{ height: '30px', width: 'auto', display: 'block' }}
             />
           </a>

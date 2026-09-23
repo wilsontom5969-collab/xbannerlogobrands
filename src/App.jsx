@@ -315,7 +315,7 @@ function App() {
                 <FadeInSection delay={0.1}>
                   <p style={{ fontSize: '1.25rem', lineHeight: '1.7', color: '#1a1a1a', fontWeight: 500, margin: 0 }}>
                     You sponsor my character development.<br />
-                    I put your brand on my banner.
+                    I put your brand on my X banner.
                   </p>
                 </FadeInSection>
                 <FadeInSection delay={0.2}>

@@ -451,7 +451,7 @@ function App() {
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', padding: '0 2rem' }}>
           <div className="footer-links" style={{ display: 'flex', gap: '2rem' }}>
             <a href="#terms" onClick={(e) => { e.preventDefault(); setCurrentView('terms'); window.scrollTo(0, 0); }} style={{ textDecoration: 'underline' }}>Terms & Refund Policy</a>
-            <a href="mailto:wilsontom5969@gmail.com" style={{ textDecoration: 'underline' }}>wilsontom5969@gmail.com</a>
+            <a href="mailto:whatifwilson@gmail.com" style={{ textDecoration: 'underline' }}>whatifwilson@gmail.com</a>
           </div>
           <div style={{ color: '#666', fontSize: '0.85rem' }}>
             &copy; 2026 Wilson, Brand My Arc. All rights reserved.
